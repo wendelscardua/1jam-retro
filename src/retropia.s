@@ -44,7 +44,11 @@ all_sprites:
 .zeropage
 
 .enum game_states
-  playing = 0
+  navigating_world = 0
+  playing_warehouse_keeper ; push stuff
+  playing_galacta          ; pew pew
+  playing_mine_finder      ; bombs
+  playing_dodging_fish     ; swim
 .endenum
 
 .importzp rng_seed
@@ -342,25 +346,53 @@ vblankwait:       ; wait for another vblank before continuing
 .proc game_state_handler
   ; Uses RTS Trick
   LDX game_state
-  LDA game_state_handlers+1, X
+  LDA game_state_handlers_h, X
   PHA
-  LDA game_state_handlers, X
+  LDA game_state_handlers_l, X
   PHA
   RTS
 .endproc
 
-.proc game_state_playing
-  JSR player_input
+.proc game_state_navigating_world
+  JMP player_input
+  ; tail call
+.endproc
+
+.proc game_state_playing_warehouse_keeper ; push stuff
   RTS
 .endproc
+
+.proc game_state_playing_galacta          ; pew pew
+  RTS
+.endproc
+
+.proc game_state_playing_mine_finder      ; bombs
+  RTS
+.endproc
+
+.proc game_state_playing_dodging_fish     ; swim
+  RTS
+.endproc
+
+
 
 .segment "VECTORS"
 .addr nmi_handler, reset_handler, irq_handler
 
 .segment "RODATA"
 
-game_state_handlers:
-  .word game_state_playing-1
+game_state_handlers_l:
+  .byte <(game_state_navigating_world-1)
+  .byte <(game_state_playing_warehouse_keeper-1)
+  .byte <(game_state_playing_galacta-1)
+  .byte <(game_state_playing_mine_finder-1)
+  .byte <(game_state_playing_dodging_fish-1)
+game_state_handlers_h:
+  .byte >(game_state_navigating_world-1)
+  .byte >(game_state_playing_warehouse_keeper-1)
+  .byte >(game_state_playing_galacta-1)
+  .byte >(game_state_playing_mine_finder-1)
+  .byte >(game_state_playing_dodging_fish-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
