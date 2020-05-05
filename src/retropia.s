@@ -398,18 +398,26 @@ palettes:
 .incbin "../assets/bg-palettes.pal"
 .incbin "../assets/sprite-palettes.pal"
 
-;sprites:
-;.include "../assets/metasprites.s"
+sprites:
+.include "../assets/metasprites.s"
 
 level_pointers:
         .word level_0_data
+
+wk_level_pointers:
+        .word wk_level_1_data
 
         ; level data format:
         ; pointer to rle bg nametable
 level_0_data:
         .word nametable_level_0
 
+wk_level_1_data:
+        .word nametable_wk_level_1
+
 nametable_level_0: .incbin "../assets/level/level-0.rle"
+
+nametable_wk_level_1: .incbin "../assets/wk-level/1.rle"
 
 ; music and sfx data
 ;.include "../assets/music/some-music.s"
