@@ -18,6 +18,16 @@ FT_DPCM_OFF= $c000
 
 ; SFX_SOME_SFX = 0
 
+; workhouse keeper constants
+.enum wk_symbols
+  padding = $2D ; "-" 
+  empty   = $20 ; " "
+  wall    = $23 ; "#"
+  box     = $6F ; "o"
+  goal    = $78 ; "x"
+  player  = $40 ; "@"
+.endenum
+
 ; game config
 
 .segment "ZEROPAGE"
@@ -44,11 +54,13 @@ all_sprites:
 .zeropage
 
 .enum game_states
-  navigating_world = 0
-  playing_warehouse_keeper ; push stuff
-  playing_galacta          ; pew pew
-  playing_mine_finder      ; bombs
-  playing_dodging_fish     ; swim
+  main_playing = 0
+  ; wk = workhouse keeper (sokoban clone)
+  wk_booting_gamekid
+  wk_title
+  wk_load_next_level
+  wk_playing
+  wk_win
 .endenum
 
 .importzp rng_seed
@@ -64,10 +76,19 @@ nmis: .res 1
 old_nmis: .res 1
 args: .res 5
 game_state: .res 1
+current_nametable: .res 1
 current_level: .res 1
+current_sub_level: .res 1
+frame_counter: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
+gamekid_ram: .res $100
+
+.struct wk_var
+  table .res 9*16
+  player_xy .byte
+.endstruct
 
 .segment "CODE"
 
@@ -125,7 +146,10 @@ skip:
 
   ; Fix Scroll
   LDA PPUSTATUS
-  LDA #$20
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
   STA PPUADDR
   LDA #$00
   STA PPUADDR
@@ -209,9 +233,10 @@ vblankwait:       ; wait for another vblank before continuing
   ; LDA #1
   ; JSR FamiToneSfxInit
 
+  LDA #game_states::wk_booting_gamekid
+  STA game_state
   LDA #$00
-  STA current_level
-  JSR load_level
+  STA frame_counter
 
 forever:
   LDA nmis
@@ -228,8 +253,10 @@ etc:
 .endproc
 
 .proc load_level
+; expects rle_ptr to already point to rle data
+; if addr_ptr is present, uses it to load second bg
   BIT PPUSTATUS
-  LDA #%00010000  ; turn of NMIs
+  LDA #%00010000  ; turn off NMIs
   STA PPUCTRL
   LDA #%00000000  ; turn off screen
   STA PPUMASK
@@ -243,20 +270,6 @@ etc:
   BNE :-
 
   ; read bg rle pointer and uncompress it
-  LDA current_level
-  ASL
-  TAX
-  LDA level_pointers,X
-  STA addr_ptr
-  LDA level_pointers+1,X
-  STA addr_ptr+1
-
-  LDA (addr_ptr),Y
-  INY
-  STA rle_ptr
-  LDA (addr_ptr),Y
-  INY
-  STA rle_ptr+1
   save_regs
 :  ; wait for another vblank before continuing
   BIT PPUSTATUS
@@ -266,6 +279,21 @@ etc:
   LDA #$00
   STA PPUADDR
   JSR unrle
+  LDA addr_ptr
+  BEQ :++
+:  ; wait for another vblank before continuing
+  BIT PPUSTATUS
+  BPL :-
+  LDA addr_ptr
+  STA rle_ptr
+  LDA addr_ptr+1
+  STA rle_ptr+1
+  LDA #$24
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  JSR unrle
+:
   restore_regs
 
 vblankwait:       ; wait for another vblank before continuing
@@ -353,27 +381,91 @@ vblankwait:       ; wait for another vblank before continuing
   RTS
 .endproc
 
-.proc game_state_navigating_world
-  JMP player_input
-  ; tail call
-.endproc
-
-.proc game_state_playing_warehouse_keeper ; push stuff
+.proc main_playing
+  JSR player_input
   RTS
 .endproc
 
-.proc game_state_playing_galacta          ; pew pew
+.proc wk_booting_gamekid
+  LDA frame_counter
+  BNE wait_for_title
+  ; load gamekid screen
+  LDA #<nametable_gamekid_boot
+  STA rle_ptr
+  LDA #>nametable_gamekid_boot
+  STA rle_ptr+1
+  ; ... and also wk title
+  LDA #<nametable_wk_title
+  STA addr_ptr
+  LDA #>nametable_wk_title
+  STA addr_ptr+1
+  JSR load_level
+
+wait_for_title:
+  ; TODO: optimize
+  INC frame_counter
+  LDA #240 ; wait a second
+  CMP frame_counter
+  BNE :+
+  LDA #game_states::wk_title
+  STA game_state
+  LDA #$00
+  STA frame_counter
+:
   RTS
 .endproc
 
-.proc game_state_playing_mine_finder      ; bombs
+.proc wk_title
+  LDA frame_counter
+  BNE wait_for_level
+
+  ; insta scroll to title
+  LDA #$01
+  STA current_nametable
+wait_for_level:
+  ; TODO: optimize
+  INC frame_counter
+  LDA #240 ; wait a second
+  CMP frame_counter
+  BNE :+
+  LDA #game_states::wk_load_next_level
+  STA game_state
+  LDA #$00
+  STA current_sub_level
+  STA frame_counter
+:
   RTS
 .endproc
 
-.proc game_state_playing_dodging_fish     ; swim
+.proc wk_load_next_level
+  LDA current_sub_level
+  ASL
+  TAX
+  LDA wk_levels,X
+  STA addr_ptr
+  LDA wk_levels+1,X
+  STA addr_ptr+1
+
+  LDY #(.sizeof(wk_var::table)-1)
+loop:
+  LDA (addr_ptr),Y
+  STA gamekid_ram+wk_var::table,Y
+  DEY
+  CPY #$FF ; TODO optimize
+  BNE loop
+
+  ; TODO actually draw screen
+
   RTS
 .endproc
 
+.proc wk_playing
+  RTS
+.endproc
+
+.proc wk_win
+  RTS
+.endproc
 
 
 .segment "VECTORS"
@@ -382,17 +474,19 @@ vblankwait:       ; wait for another vblank before continuing
 .segment "RODATA"
 
 game_state_handlers_l:
-  .byte <(game_state_navigating_world-1)
-  .byte <(game_state_playing_warehouse_keeper-1)
-  .byte <(game_state_playing_galacta-1)
-  .byte <(game_state_playing_mine_finder-1)
-  .byte <(game_state_playing_dodging_fish-1)
+  .byte <(main_playing-1)
+  .byte <(wk_booting_gamekid-1)
+  .byte <(wk_title-1)
+  .byte <(wk_load_next_level-1)
+  .byte <(wk_playing-1)
+  .byte <(wk_win-1)
 game_state_handlers_h:
-  .byte >(game_state_navigating_world-1)
-  .byte >(game_state_playing_warehouse_keeper-1)
-  .byte >(game_state_playing_galacta-1)
-  .byte >(game_state_playing_mine_finder-1)
-  .byte >(game_state_playing_dodging_fish-1)
+  .byte >(main_playing-1)
+  .byte >(wk_booting_gamekid-1)
+  .byte >(wk_title-1)
+  .byte >(wk_load_next_level-1)
+  .byte >(wk_playing-1)
+  .byte >(wk_win-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
@@ -401,23 +495,50 @@ palettes:
 sprites:
 .include "../assets/metasprites.s"
 
-level_pointers:
+levels:
         .word level_0_data
-
-wk_level_pointers:
-        .word wk_level_1_data
 
         ; level data format:
         ; pointer to rle bg nametable
 level_0_data:
         .word nametable_level_0
 
+
+
+wk_levels:
+        .word wk_level_1_data
+        .word wk_level_2_data
+
+; format:
+; 9-rows, 16-column matrix of bytes
+; cell values tell if it's padding, space, wall, box, goal, player
+       ;                     '-'    ' '    '#'   'o'   'x'  '@'
+; 3 columns each side are just padding, makes math easier
 wk_level_1_data:
-        .word nametable_wk_level_1
+        .byte "---##########---"
+        .byte "---#   x#   #---"
+        .byte "---# #      #---"
+        .byte "---# # ##   #---"
+        .byte "---#@#  oo ##---"
+        .byte "---# # ##   #---"
+        .byte "---# #      #---"
+        .byte "---#   x#   #---"
+        .byte "---##########---"
+
+wk_level_2_data:
+        .byte "---##########---"
+        .byte "---#   o   x#---"
+        .byte "---#  oo    #---"
+        .byte "---#   o   x#---"
+        .byte "---###### ###---"
+        .byte "---#       x#---"
+        .byte "---#   @    #---"
+        .byte "---#       x#---"
+        .byte "---##########---"
 
 nametable_level_0: .incbin "../assets/level/level-0.rle"
-
-nametable_wk_level_1: .incbin "../assets/wk-level/1.rle"
+nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
+nametable_wk_title: .incbin "../assets/wk-level/title.rle"
 
 ; music and sfx data
 ;.include "../assets/music/some-music.s"
