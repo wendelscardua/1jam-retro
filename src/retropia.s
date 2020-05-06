@@ -422,22 +422,25 @@ wait_for_title:
   ; insta scroll to title
   LDA #$01
   STA current_nametable
+  LDA #$00
+  STA current_sub_level
+  JSR wk_load_level_data
+
 wait_for_level:
   ; TODO: optimize
   INC frame_counter
   LDA #240 ; wait a second
   CMP frame_counter
   BNE :+
-  LDA #game_states::wk_load_next_level
+  LDA #game_states::wk_playing
   STA game_state
-  LDA #$00
-  STA current_sub_level
-  STA frame_counter
 :
+  ; use the wait to draw the level bg, row by row (gotta go fast)
+  JSR wk_partial_draw_level
   RTS
 .endproc
 
-.proc wk_load_next_level
+.proc wk_load_level_data
   LDA current_sub_level
   ASL
   TAX
@@ -453,13 +456,193 @@ loop:
   DEY
   CPY #$FF ; TODO optimize
   BNE loop
+  RTS
+.endproc
 
-  ; TODO actually draw screen
+.proc wk_partial_draw_level
+  LDA frame_counter
+  CMP #$06
+  BCS :+
+  RTS
+:
+  CMP #$18
+  BCC :+
+  RTS
+:
+  ; frame_counter = y-coordinate in nametable
+  TAY
+  LDA current_nametable
+  EOR #%1
+  ASL
+  ASL
+  ORA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
 
+  ; adding y*$20 to ppu_addr_ptr
+  ; 76543210         76543210 76543210
+  ; 000edcba x $20 = 000000ed cba00000
+  
+  ; ed
+  TYA
+  .repeat 3
+  LSR
+  .endrepeat
+  CLC
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+
+  ; cba
+  TYA
+  .repeat 5
+  ASL
+  .endrepeat
+  CLC
+  ADC #$06 ; X offset
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+  LDA PPUSTATUS
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  ; now let's write a row
+  TYA
+  SEC
+  SBC #$06
+  .repeat 3
+  ASL
+  .endrepeat
+  AND #$F0
+  ORA #$03
+  TAY
+
+  LDA frame_counter
+  AND #%1
+  BNE even_loop
+
+odd_loop:
+  LDA gamekid_ram+wk_var::table,Y
+  CMP #wk_symbols::padding
+  BNE :+
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  LDA #$00 ; horizontal scroll
+  STA PPUSCROLL
+  STA PPUSCROLL
+  RTS
+:
+  CMP #wk_symbols::empty
+  BNE :+
+draw_empty:
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+  INY
+  JMP odd_loop
+:
+  CMP #wk_symbols::wall
+  BNE :+
+  LDA #$C0
+  STA PPUDATA
+  LDA #$C1
+  STA PPUDATA
+  INY
+  JMP odd_loop
+:
+  CMP #wk_symbols::box
+  BNE :+
+  ; TODO create box object
+  JMP draw_empty
+:
+  CMP #wk_symbols::goal
+  BNE :+
+  LDA #$C2
+  STA PPUDATA
+  LDA #$C3
+  STA PPUDATA
+  INY
+  JMP odd_loop
+:
+  CMP #wk_symbols::player
+  BNE return
+  ; TODO create player
+  JMP draw_empty
+
+
+even_loop:
+  LDA gamekid_ram+wk_var::table,Y
+  CMP #wk_symbols::padding
+  BNE :+
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  LDA #$00 ; horizontal scroll
+  STA PPUSCROLL
+  STA PPUSCROLL
+  RTS
+:
+  CMP #wk_symbols::empty
+  BNE :+
+even_draw_empty:
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+  INY
+  JMP even_loop
+:
+  CMP #wk_symbols::wall
+  BNE :+
+  LDA #$D0
+  STA PPUDATA
+  LDA #$D1
+  STA PPUDATA
+  INY
+  JMP even_loop
+:
+  CMP #wk_symbols::box
+  BNE :+
+  ; TODO create box object
+  JMP even_draw_empty
+:
+  CMP #wk_symbols::goal
+  BNE :+
+  LDA #$D2
+  STA PPUDATA
+  LDA #$D3
+  STA PPUDATA
+  INY
+  JMP even_loop
+:
+  CMP #wk_symbols::player
+  BNE return
+  ; TODO create player
+  JMP even_draw_empty
+
+return:
   RTS
 .endproc
 
 .proc wk_playing
+  RTS
+.endproc
+
+.proc wk_load_next_level
   RTS
 .endproc
 
