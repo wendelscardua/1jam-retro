@@ -88,6 +88,7 @@ gamekid_ram: .res $100
 .struct wk_var
   table .res 9*16
   player_xy .byte
+  box_xy .res 4
 .endstruct
 
 .segment "CODE"
@@ -449,10 +450,27 @@ wait_for_level:
   LDA wk_levels+1,X
   STA addr_ptr+1
 
+  LDA #$FF
+  STA gamekid_ram+wk_var::box_xy+0
+  STA gamekid_ram+wk_var::box_xy+1
+  STA gamekid_ram+wk_var::box_xy+2
+  STA gamekid_ram+wk_var::box_xy+3
+  LDX #$00
   LDY #(.sizeof(wk_var::table)-1)
 loop:
   LDA (addr_ptr),Y
   STA gamekid_ram+wk_var::table,Y
+  CMP #wk_symbols::box
+  BNE :+
+  TYA
+  STA gamekid_ram+wk_var::box_xy,X
+  INX
+:
+  CMP #wk_symbols::player
+  BNE :+
+  TYA
+  STA gamekid_ram+wk_var::player_xy
+:
   DEY
   CPY #$FF ; TODO optimize
   BNE loop
