@@ -433,6 +433,8 @@ wait_for_level:
   LDA #240 ; wait a second
   CMP frame_counter
   BNE :+
+  LDA #$00
+  STA current_nametable
   LDA #game_states::wk_playing
   STA game_state
 :
