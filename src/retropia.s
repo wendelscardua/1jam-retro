@@ -734,10 +734,32 @@ push_box:
   CLC
   ADC gamekid_ram+wk_var::box_xy,X
   STA gamekid_ram+wk_var::box_xy,X
+
+  ; check if box-box collision happened
+  ; first we swap first box with Xth box
+  LDA gamekid_ram+wk_var::box_xy,X
+  PHA
+  LDA gamekid_ram+wk_var::box_xy
+  STA gamekid_ram+wk_var::box_xy,X
+  PLA
+  STA gamekid_ram+wk_var::box_xy
+
+  ; now we check if first box matches any other
+  ; (we can cobble X now)
+  LDX #$03
+:
+  CMP gamekid_ram+wk_var::box_xy,X
+  BEQ undo_move
+  DEX
+  BNE :-
+
+  ; check if box-wall collision happened
+  LDA gamekid_ram+wk_var::box_xy
   TAX
   LDA gamekid_ram+wk_var::table,X
   CMP #wk_symbols::wall
   BEQ undo_move
+
   JMP after_move
 
 undo_move:
