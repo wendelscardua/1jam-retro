@@ -716,7 +716,30 @@ post_move:
   LDA gamekid_ram+wk_var::table,X
   CMP #wk_symbols::wall
   BEQ undo_move
+
+  ; check box collision
+  LDX #$03
+  LDA gamekid_ram+wk_var::player_xy
+:
+  CMP gamekid_ram+wk_var::box_xy,X
+  BEQ push_box
+  DEX
+  BPL :-
   JMP after_move
+push_box:
+  ; move Xth box by same direction as player
+  ; A = player xy
+  SEC
+  SBC gamekid_ram+wk_var::old_xy
+  CLC
+  ADC gamekid_ram+wk_var::box_xy,X
+  STA gamekid_ram+wk_var::box_xy,X
+  TAX
+  LDA gamekid_ram+wk_var::table,X
+  CMP #wk_symbols::wall
+  BEQ undo_move
+  JMP after_move
+
 undo_move:
   LDX #$04
 :
@@ -813,6 +836,8 @@ loop:
   STA oam_sprites+Sprite::xcoord,X
   LDA (addr_ptr),Y ; delta y
   INY
+  SEC
+  SBC #$01
   CLC
   ADC temp_y
   STA oam_sprites+Sprite::ycoord,X
