@@ -899,6 +899,18 @@ return:
 .endproc
 
 .proc wk_win
+  LDA #$CC
+  STA ppu_addr_ptr
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA ppu_addr_ptr+1
+  print string_you_win
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
   KIL ; not implemented
   RTS
 .endproc
@@ -989,6 +1001,9 @@ sprites:
 
 wk_box_sprite = metasprite_0_data
 wk_player_sprite = metasprite_1_data
+
+strings:
+string_you_win: .byte "YOU", $5B, "WIN", $00
 
 levels:
         .word level_0_data
