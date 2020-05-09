@@ -64,6 +64,11 @@ oam_sprites:
   wk_load_next_level
   wk_playing
   wk_win
+  ; gi = galaxy intruders (pew pew)
+  gi_booting_gamekid
+  gi_title
+  gi_playing
+  gi_win
 .endenum
 
 .importzp rng_seed
@@ -245,6 +250,7 @@ vblankwait:       ; wait for another vblank before continuing
   ; JSR FamiToneSfxInit
 
   LDA #game_states::wk_booting_gamekid
+  ; LDA #game_states::gi_booting_gamekid
   STA game_state
   LDA #$00
   STA frame_counter
@@ -437,7 +443,11 @@ exit:
   RTS
 .endproc
 
-.proc wk_booting_gamekid
+.proc gk_booting_gamekid
+  ; generic "state"
+  ; input: A register = target gamestate
+  PHA ; save target
+
   LDA frame_counter
   BNE wait_for_title
   ; load gamekid screen
@@ -458,11 +468,19 @@ wait_for_title:
   LDA #GAMEKID_DELAY ; wait a second
   CMP frame_counter
   BNE :+
-  LDA #game_states::wk_title
+  PLA ; restore target
   STA game_state
   LDA #$00
   STA frame_counter
+  RTS
 :
+  PLA ; discard unused target
+  RTS
+.endproc
+
+.proc wk_booting_gamekid
+  LDA #game_states::wk_title
+  JSR gk_booting_gamekid
   RTS
 .endproc
 
