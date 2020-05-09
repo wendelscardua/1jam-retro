@@ -445,8 +445,6 @@ exit:
 
 .proc gk_booting_gamekid
   ; generic "state"
-  ; input: A register = target gamestate
-  PHA ; save target
 
   LDA frame_counter
   BNE wait_for_title
@@ -456,9 +454,12 @@ exit:
   LDA #>nametable_gamekid_boot
   STA rle_ptr+1
   ; ... and also wk title
-  LDA #<nametable_wk_title
+  LDX game_state
+  LDA subgame_by_game_state,X
+  TAX
+  LDA subgame_nametables_l,X
   STA addr_ptr
-  LDA #>nametable_wk_title
+  LDA subgame_nametables_h,X
   STA addr_ptr+1
   JSR load_level
 
@@ -468,18 +469,15 @@ wait_for_title:
   LDA #GAMEKID_DELAY ; wait a second
   CMP frame_counter
   BNE :+
-  PLA ; restore target
-  STA game_state
+  INC game_state ; XXX assume ??-title comes after ??-booting
   LDA #$00
   STA frame_counter
   RTS
 :
-  PLA ; discard unused target
   RTS
 .endproc
 
 .proc wk_booting_gamekid
-  LDA #game_states::wk_title
   JSR gk_booting_gamekid
   RTS
 .endproc
@@ -961,7 +959,109 @@ return:
 .endproc
 
 .proc gi_title
-  KIL
+  LDA frame_counter
+  BNE wait_for_level
+
+  ; insta scroll to title
+  LDA #$01
+  STA current_nametable
+
+wait_for_level:
+  ; TODO: optimize
+  INC frame_counter
+  LDA #GAMEKID_DELAY ; wait a second
+  CMP frame_counter
+  BNE :+
+  LDA #$00
+  STA current_nametable
+  LDA #game_states::gi_playing
+  STA game_state
+:
+  ; use the wait to draw the level bg, row by row (gotta go fast)
+  JSR gi_partial_draw_level
+  RTS
+.endproc
+
+.proc gi_partial_draw_level
+  LDA frame_counter
+  CMP #$06
+  BCS :+
+  RTS
+:
+  CMP #$18
+  BCC :+
+  RTS
+:
+
+  TAY
+  LDA current_nametable
+  EOR #%1
+  ASL
+  ASL
+  ORA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+
+  ; adding y*$20 to ppu_addr_ptr
+  ; 76543210         76543210 76543210
+  ; 000edcba x $20 = 000000ed cba00000
+  
+  ; ed
+  TYA
+  .repeat 3
+  LSR
+  .endrepeat
+  CLC
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+
+  ; cba
+  TYA
+  .repeat 5
+  ASL
+  .endrepeat
+  CLC
+  ADC #$06 ; X offset
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+  LDA PPUSTATUS
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  LDX #$09
+:
+  JSR rand
+  LDA rng_seed
+  AND #%11
+  CLC
+  ADC #$C8
+  STA PPUDATA
+  LDA rng_seed+1
+  AND #%11
+  CLC
+  ADC #$C8
+  STA PPUDATA
+  DEX
+  BPL :-
+
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  LDA #$00 ; horizontal scroll
+  STA PPUSCROLL
+  STA PPUSCROLL
+
   RTS
 .endproc
 
@@ -1131,8 +1231,22 @@ wk_level_3_data:
 
 nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
-nametable_gi_title: .incbin "../assets/gi-level/title.rle"
 nametable_wk_title: .incbin "../assets/wk-level/title.rle"
+nametable_gi_title: .incbin "../assets/gi-level/title.rle"
+
+subgame_by_game_state:
+        .byte $00 ; main
+        .byte $01, $01, $01, $01, $01 ; WK
+        .byte $02, $02, $02, $02 ; GI
+
+subgame_nametables_l:
+        .byte $00
+        .byte <nametable_wk_title
+        .byte <nametable_gi_title
+subgame_nametables_h:
+        .byte $00
+        .byte >nametable_wk_title
+        .byte >nametable_gi_title
 
 ; music and sfx data
 ;.include "../assets/music/some-music.s"
