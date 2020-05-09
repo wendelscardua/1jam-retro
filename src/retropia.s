@@ -361,14 +361,14 @@ vblankwait:       ; wait for another vblank before continuing
   .repeat 4
   LSR
   .endrepeat
-  JSR DEBUG_print_hex
+  JSR print_hex
   PLA
   AND #%00001111
-  JSR DEBUG_print_hex
+  JSR print_hex
   RTS
 .endproc
 
-.proc DEBUG_print_hex
+.proc print_hex
   CMP #$0A
   BCS :+
   CLC
@@ -378,6 +378,46 @@ vblankwait:       ; wait for another vblank before continuing
 :
   ADC #$36
   STA PPUDATA
+  RTS
+.endproc
+
+.macro print string
+  LDA #<string
+  STA addr_ptr
+  LDA #>string
+  STA addr_ptr+1
+  JSR write_tiles
+.endmacro
+
+; these act like printf, displaying the corresponding digit instead
+WRITE_X_SYMBOL = $FE
+
+.proc write_tiles
+  ; write tiles on background
+  ; addr_ptr - point to string starting point (strings end with $00)
+  ; ppu_addr_ptr - PPU target
+  ; When the tile is #WRITE_X_SYMBOL, the current value for X
+  ; is written instead (e.g. '2' tile for X = 2)
+  LDA PPUSTATUS
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+  LDY #0
+writing_loop:
+  LDA (addr_ptr), Y
+  BEQ exit
+  CMP #WRITE_X_SYMBOL
+  BNE write_tile
+  TXA
+  JSR print_hex
+  JMP next
+write_tile:
+  STA PPUDATA
+next:
+  INY
+  JMP writing_loop
+exit:
   RTS
 .endproc
 
