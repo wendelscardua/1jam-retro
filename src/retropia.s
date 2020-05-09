@@ -932,7 +932,7 @@ return:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; not implemented
+  KIL ; TODO - return to main game (with push power)
   RTS
 .endproc
 
