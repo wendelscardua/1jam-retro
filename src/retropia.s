@@ -46,7 +46,7 @@ FT_BASE_ADR: .res 186
   xcoord .byte
 .endstruct
 
-all_sprites:
+oam_sprites:
   .repeat 64
     .tag Sprite
   .endrepeat
@@ -80,6 +80,10 @@ current_nametable: .res 1
 current_level: .res 1
 current_sub_level: .res 1
 frame_counter: .res 1
+sprite_counter: .res 1
+temp_a: .res 1
+temp_x: .res 1
+temp_y: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -452,7 +456,7 @@ wait_for_level:
   LDA wk_levels+1,X
   STA addr_ptr+1
 
-  LDA #$FF
+  LDA #$00
   STA gamekid_ram+wk_var::box_xy+0
   STA gamekid_ram+wk_var::box_xy+1
   STA gamekid_ram+wk_var::box_xy+2
@@ -659,17 +663,111 @@ return:
 .endproc
 
 .proc wk_playing
+  ; TODO: player input
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+  
+  LDA #<wk_player_sprite
+  STA addr_ptr
+  LDA #>wk_player_sprite
+  STA addr_ptr+1
+  LDA gamekid_ram+wk_var::player_xy
+  JSR gamekid_xy_to_coordinates
+  JSR display_metasprite
+
+  LDA #<wk_box_sprite
+  STA addr_ptr
+  LDA #>wk_box_sprite
+  STA addr_ptr+1
+
+  ; TODO optimize?
+  LDA gamekid_ram+wk_var::box_xy+0
+  BEQ return
+  JSR gamekid_xy_to_coordinates
+  JSR display_metasprite
+  LDA gamekid_ram+wk_var::box_xy+1
+  BEQ return
+  JSR gamekid_xy_to_coordinates
+  JSR display_metasprite
+  LDA gamekid_ram+wk_var::box_xy+2
+  BEQ return
+  JSR gamekid_xy_to_coordinates
+  JSR display_metasprite
+  LDA gamekid_ram+wk_var::box_xy+3
+  BEQ return
+  JSR gamekid_xy_to_coordinates
+  JSR display_metasprite
+
+return:
   RTS
 .endproc
 
 .proc wk_load_next_level
+  KIL ; not implemented
   RTS
 .endproc
 
 .proc wk_win
+  KIL ; not implemented
   RTS
 .endproc
 
+.proc gamekid_xy_to_coordinates
+  ; input: A = gamekid xy coordinates (high nibble y, low nibble x)
+  ; output: temp_x and temp_y = screen xy coordinates
+  STA temp_y ; save A
+
+  ; compute X
+  AND #%00001111
+  .repeat 4
+  ASL
+  .endrepeat
+  STA temp_x
+
+  ; compute Y
+  LDA temp_y
+  AND #%11110000
+  CLC
+  ADC #$30 ; y coordinate skips some unused rows in order to save some ram
+  STA temp_y
+  RTS
+.endproc
+
+.proc display_metasprite
+  ; input: (addr_ptr) = metasprite pointer
+  ;        temp_x and temp_y = screen position for metasprite origin
+
+  LDY #0
+  LDX sprite_counter
+loop:
+  LDA (addr_ptr),Y ; delta x
+  CMP #128
+  BEQ return
+  INY
+  CLC
+  ADC temp_x
+  STA oam_sprites+Sprite::xcoord,X
+  LDA (addr_ptr),Y ; delta y
+  INY
+  CLC
+  ADC temp_y
+  STA oam_sprites+Sprite::ycoord,X
+  LDA (addr_ptr),Y ; tile
+  INY
+  STA oam_sprites+Sprite::tile,X
+  LDA (addr_ptr),Y ; flags
+  INY
+  STA oam_sprites+Sprite::flag,X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  JMP loop
+return:
+  STX sprite_counter
+  RTS
+.endproc
 
 .segment "VECTORS"
 .addr nmi_handler, reset_handler, irq_handler
@@ -697,6 +795,9 @@ palettes:
 
 sprites:
 .include "../assets/metasprites.s"
+
+wk_box_sprite = metasprite_0_data
+wk_player_sprite = metasprite_1_data
 
 levels:
         .word level_0_data

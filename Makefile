@@ -16,4 +16,4 @@ src/${PROJECT}.o: src/${PROJECT}.s assets/* assets/level/* # assets/music/*
 	ca65 $<
 
 clean:
-	rm src/*.o *.nes
+	rm src/*.o *.nes labels.txt
