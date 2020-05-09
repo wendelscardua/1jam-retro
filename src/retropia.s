@@ -85,6 +85,7 @@ current_sub_level: .res 1
 frame_counter: .res 1
 sprite_counter: .res 1
 temp_a: .res 1
+temp_b: .res 1
 temp_x: .res 1
 temp_y: .res 1
 
@@ -790,23 +791,37 @@ after_move:
   STA addr_ptr+1
 
   ; TODO optimize?
-  LDA gamekid_ram+wk_var::box_xy+0
-  BEQ return
-  JSR gamekid_xy_to_coordinates
-  JSR display_metasprite
-  LDA gamekid_ram+wk_var::box_xy+1
-  BEQ return
-  JSR gamekid_xy_to_coordinates
-  JSR display_metasprite
-  LDA gamekid_ram+wk_var::box_xy+2
-  BEQ return
-  JSR gamekid_xy_to_coordinates
-  JSR display_metasprite
-  LDA gamekid_ram+wk_var::box_xy+3
-  BEQ return
+  LDA #$00
+  STA temp_a
+  STA temp_b
+draw_loop:
+  LDA temp_a
+  TAX
+  LDA gamekid_ram+wk_var::box_xy,X
+  BEQ after_drawing
+
   JSR gamekid_xy_to_coordinates
   JSR display_metasprite
 
+  LDX temp_a
+  LDA gamekid_ram+wk_var::box_xy,X
+  TAX
+  LDA gamekid_ram+wk_var::table,X
+  CMP #wk_symbols::goal
+  BNE :+
+  INC temp_b
+:
+
+  INC temp_a
+  LDA #$04
+  CMP temp_a
+  BNE draw_loop
+  
+after_drawing:
+  LDA temp_a
+  CMP temp_b
+  BNE return
+  KIL ; goal!
 return:
   RTS
 .endproc
