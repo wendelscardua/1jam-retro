@@ -1131,6 +1131,7 @@ wk_level_3_data:
 
 nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
+nametable_gi_title: .incbin "../assets/gi-level/title.rle"
 nametable_wk_title: .incbin "../assets/wk-level/title.rle"
 
 ; music and sfx data
