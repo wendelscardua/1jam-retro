@@ -249,8 +249,8 @@ vblankwait:       ; wait for another vblank before continuing
   ; LDA #1
   ; JSR FamiToneSfxInit
 
-  LDA #game_states::wk_booting_gamekid
-  ; LDA #game_states::gi_booting_gamekid
+  ; LDA #game_states::wk_booting_gamekid
+  LDA #game_states::gi_booting_gamekid
   STA game_state
   LDA #$00
   STA frame_counter
@@ -954,6 +954,27 @@ return:
   RTS
 .endproc
 
+.proc gi_booting_gamekid
+  LDA #game_states::gi_title
+  JSR gk_booting_gamekid
+  RTS
+.endproc
+
+.proc gi_title
+  KIL
+  RTS
+.endproc
+
+.proc gi_playing
+  KIL
+  RTS
+.endproc
+
+.proc gi_win
+  KIL
+  RTS
+.endproc
+
 .proc gamekid_xy_to_coordinates
   ; input: A = gamekid xy coordinates (high nibble y, low nibble x)
   ; output: temp_x and temp_y = screen xy coordinates
@@ -1023,6 +1044,11 @@ game_state_handlers_l:
   .byte <(wk_load_next_level-1)
   .byte <(wk_playing-1)
   .byte <(wk_win-1)
+  .byte <(gi_booting_gamekid-1)
+  .byte <(gi_title-1)
+  .byte <(gi_playing-1)
+  .byte <(gi_win-1)
+
 game_state_handlers_h:
   .byte >(main_playing-1)
   .byte >(wk_booting_gamekid-1)
@@ -1030,6 +1056,10 @@ game_state_handlers_h:
   .byte >(wk_load_next_level-1)
   .byte >(wk_playing-1)
   .byte >(wk_win-1)
+  .byte >(gi_booting_gamekid-1)
+  .byte >(gi_title-1)
+  .byte >(gi_playing-1)
+  .byte >(gi_win-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
