@@ -30,6 +30,9 @@ FT_DPCM_OFF= $c000
 
 ; game config
 
+GAMEKID_DELAY = 60
+
+
 .segment "ZEROPAGE"
 FT_TEMP: .res 3
 .segment "FAMITONE"
@@ -93,6 +96,7 @@ gamekid_ram: .res $100
   table .res 9*16
   player_xy .byte
   box_xy .res 4
+  old_xy .res 5
 .endstruct
 
 .segment "CODE"
@@ -409,7 +413,7 @@ vblankwait:       ; wait for another vblank before continuing
 wait_for_title:
   ; TODO: optimize
   INC frame_counter
-  LDA #240 ; wait a second
+  LDA #GAMEKID_DELAY ; wait a second
   CMP frame_counter
   BNE :+
   LDA #game_states::wk_title
@@ -434,7 +438,7 @@ wait_for_title:
 wait_for_level:
   ; TODO: optimize
   INC frame_counter
-  LDA #240 ; wait a second
+  LDA #GAMEKID_DELAY ; wait a second
   CMP frame_counter
   BNE :+
   LDA #$00
@@ -663,7 +667,65 @@ return:
 .endproc
 
 .proc wk_playing
-  ; TODO: player input
+  ; player input
+  ; first, save old xys
+  LDX #$4
+:
+  LDA gamekid_ram+wk_var::player_xy,X
+  STA gamekid_ram+wk_var::old_xy,X
+  DEX
+  BPL :-
+  
+  JSR readjoy
+  LDA pressed_buttons
+  AND #BUTTON_UP
+  BEQ :+
+
+  SEC
+  LDA gamekid_ram+wk_var::player_xy
+  SBC #$10
+  STA gamekid_ram+wk_var::player_xy
+  JMP post_move
+:
+  LDA pressed_buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+  CLC
+  LDA gamekid_ram+wk_var::player_xy
+  ADC #$10
+  STA gamekid_ram+wk_var::player_xy
+  JMP post_move
+:
+  LDA pressed_buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+  DEC gamekid_ram+wk_var::player_xy
+  JMP post_move
+:
+  LDA pressed_buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+  INC gamekid_ram+wk_var::player_xy
+  JMP post_move
+:
+  ; no key pressed
+  JMP after_move
+
+post_move:
+  LDX gamekid_ram+wk_var::player_xy
+  LDA gamekid_ram+wk_var::table,X
+  CMP #wk_symbols::wall
+  BEQ undo_move
+  JMP after_move
+undo_move:
+  LDX #$04
+:
+  LDA gamekid_ram+wk_var::old_xy,X
+  STA gamekid_ram+wk_var::player_xy,X
+  DEX
+  BPL :-
+
+after_move:
 
   ; draw elements
   LDA #0
