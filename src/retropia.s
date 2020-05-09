@@ -816,18 +816,45 @@ draw_loop:
   LDA #$04
   CMP temp_a
   BNE draw_loop
-  
+
 after_drawing:
   LDA temp_a
   CMP temp_b
   BNE return
-  KIL ; goal!
+
+  ; win the level
+  INC current_sub_level
+  LDA #3
+  CMP current_sub_level
+  BEQ win
+  JSR wk_load_level_data
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::wk_load_next_level
+  STA game_state
+  JMP return
+win:
+  LDA #game_states::wk_win
+  STA game_state
+  LDA #$00
+  STA frame_counter
 return:
   RTS
 .endproc
 
 .proc wk_load_next_level
-  KIL ; not implemented
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  LDA current_nametable
+  EOR #%1
+  STA current_nametable
+  LDA #game_states::wk_playing
+  STA game_state
+  RTS
+:
+  JSR wk_partial_draw_level
   RTS
 .endproc
 
@@ -936,29 +963,42 @@ level_0_data:
 wk_levels:
         .word wk_level_1_data
         .word wk_level_2_data
+        .word wk_level_3_data
 
 ; format:
 ; 9-rows, 16-column matrix of bytes
 ; cell values tell if it's padding, space, wall, box, goal, player
        ;                     '-'    ' '    '#'   'o'   'x'  '@'
 ; 3 columns each side are just padding, makes math easier
+
 wk_level_1_data:
+        .byte "---##########---"
+        .byte "---#        #---"
+        .byte "---#   @    #---"
+        .byte "---#        #---"
+        .byte "---#x o  o x#---"
+        .byte "---#        #---"
+        .byte "---#        #---"
+        .byte "---#        #---"
+        .byte "---##########---"
+
+wk_level_2_data:
         .byte "---##########---"
         .byte "---#   x#   #---"
         .byte "---# #      #---"
         .byte "---# # ##   #---"
-        .byte "---#@#  oo ##---"
+        .byte "---#@   oo ##---"
         .byte "---# # ##   #---"
         .byte "---# #      #---"
         .byte "---#   x#   #---"
         .byte "---##########---"
 
-wk_level_2_data:
+wk_level_3_data:
         .byte "---##########---"
-        .byte "---#   o   x#---"
-        .byte "---#  oo    #---"
-        .byte "---#   o   x#---"
-        .byte "---###### ###---"
+        .byte "---#    o  x#---"
+        .byte "---#   oo   #---"
+        .byte "---#    o  x#---"
+        .byte "---#####  ###---"
         .byte "---#       x#---"
         .byte "---#   @    #---"
         .byte "---#       x#---"
