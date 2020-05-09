@@ -864,7 +864,7 @@ after_drawing:
 
   ; win the level
   INC current_sub_level
-  LDA #3
+  LDA #((wk_levels_end - wk_levels)/2)
   CMP current_sub_level
   BEQ win
   JSR wk_load_level_data
@@ -1019,6 +1019,7 @@ wk_levels:
         .word wk_level_1_data
         .word wk_level_2_data
         .word wk_level_3_data
+wk_levels_end:
 
 ; format:
 ; 9-rows, 16-column matrix of bytes
