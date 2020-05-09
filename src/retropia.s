@@ -98,6 +98,7 @@ gamekid_ram: .res $100
   player_xy .byte
   box_xy .res 4
   old_xy .res 5
+  start_xy .res 5
 .endstruct
 
 .segment "CODE"
@@ -525,6 +526,14 @@ loop:
   DEY
   CPY #$FF ; TODO optimize
   BNE loop
+
+  LDX #$04
+:
+  LDA gamekid_ram+wk_var::player_xy,X
+  STA gamekid_ram+wk_var::start_xy,X
+  DEX
+  BPL :-
+
   RTS
 .endproc
 
@@ -718,6 +727,18 @@ return:
   BPL :-
   
   JSR readjoy
+  LDA pressed_buttons
+  AND #BUTTON_B
+  BEQ :++
+
+  LDX #$04
+:
+  LDA gamekid_ram+wk_var::start_xy,X
+  STA gamekid_ram+wk_var::player_xy,X
+  DEX
+  BPL :-
+
+:
   LDA pressed_buttons
   AND #BUTTON_UP
   BEQ :+
