@@ -1140,9 +1140,8 @@ wait_for_level:
   STA gamekid_ram+gi_var::enemy_direction, X
 
 move_enemies:
-  LDA gamekid_ram+gi_var::num_enemies
+  LDX gamekid_ram+gi_var::num_enemies
   BEQ skip_loop
-  TAX
   DEX
 move_loop:
   LDA gamekid_ram+gi_var::enemy_direction, X
@@ -1175,6 +1174,37 @@ next_move:
   BPL move_loop
 
   ; check collision
+  LDX gamekid_ram+gi_var::num_enemies
+  DEX
+collision_loop:
+  LDA gamekid_ram+gi_var::enemy_y, X
+  CMP #$A2
+  BNE next_collision_iteration
+
+  ; if player_center >= enemy_x && player_center <= enemy_x + 16 then collided
+  ; player_center = player_x + 8
+  ; if player_x + 8 >= enemy_x && player_x + 8 <= enemy_x + 16 then collided
+  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
+  ; if player_x + 8 >= enemy_x && enemy_x + 8 >= player_x then collided
+  LDA gamekid_ram+gi_var::player_x
+  CLC
+  ADC #$08
+  CMP gamekid_ram+gi_var::enemy_x, X
+  BCC next_collision_iteration
+  
+  LDA gamekid_ram+gi_var::enemy_x, X
+  CLC
+  ADC #$08
+  CMP gamekid_ram+gi_var::player_x
+  BCC next_collision_iteration
+
+  KIL
+
+  
+
+next_collision_iteration:
+  DEX
+  BPL collision_loop
 
 skip_loop:
 
