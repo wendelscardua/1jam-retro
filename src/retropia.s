@@ -1103,6 +1103,98 @@ wait_for_level:
   RTS
 .endproc
 
+.proc gi_collisions
+  ; subroutine for player-enemy and bullet-enemy collisions
+  ; (mostly to avoid long jmp)
+  LDX gamekid_ram+gi_var::num_enemies
+  DEX
+collision_loop:
+  LDA gamekid_ram+gi_var::enemy_y, X
+
+  ; enemy-player collision
+  CMP #$A2
+  BNE check_bullet_collision
+
+  ; if player_center >= enemy_x && player_center <= enemy_x + 16 then collided
+  ; player_center = player_x + 8
+  ; if player_x + 8 >= enemy_x && player_x + 8 <= enemy_x + 16 then collided
+  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
+  ; if player_x + 8 >= enemy_x && enemy_x + 8 >= player_x then collided
+  LDA gamekid_ram+gi_var::player_x
+  CLC
+  ADC #$08
+  CMP gamekid_ram+gi_var::enemy_x, X
+  BCC next_collision_iteration
+  
+  LDA gamekid_ram+gi_var::enemy_x, X
+  CLC
+  ADC #$08
+  CMP gamekid_ram+gi_var::player_x
+  BCC next_collision_iteration
+
+  ; reduce player lives
+  ; TODO
+
+  JMP delete_enemy
+
+check_bullet_collision:
+  ; enemy-bullet collision
+  ; if bullet_center >= enemy_x && bullet_center <= enemy_x + 16 then collided
+  ; bullet_center = bullet_x + 4
+  ; if bullet_x + 4 >= enemy_x && bullet_x + 4 <= enemy_x + 16 then collided
+  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
+  ; if bullet_x + 4 >= enemy_x && enemy_x + 12 >= bullet_x then collided
+  LDA gamekid_ram+gi_var::bullet_x
+  CLC
+  ADC #$04
+  CMP gamekid_ram+gi_var::enemy_x, X
+  BCC next_collision_iteration
+  
+  LDA gamekid_ram+gi_var::enemy_x, X
+  CLC
+  ADC #$0C
+  CMP gamekid_ram+gi_var::bullet_x
+  BCC next_collision_iteration
+
+  ; if bullet_center >= enemy_y && bullet_center <= enemy_y + 8 then collided
+  ; bullet_center = bullet_y + 4
+  ; if bullet_y + 4 >= enemy_y && bullet_y + 4 <= enemy_y + 8 then collided
+  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
+  ; if bullet_y + 4 >= enemy_y && enemy_y + 4 >= bullet_y then collided
+  LDA gamekid_ram+gi_var::bullet_y
+  CLC
+  ADC #$04
+  CMP gamekid_ram+gi_var::enemy_y, X
+  BCC next_collision_iteration
+  
+  LDA gamekid_ram+gi_var::enemy_y, X
+  CLC
+  ADC #$04
+  CMP gamekid_ram+gi_var::bullet_y
+  BCC next_collision_iteration
+
+  ; delete bullet
+  LDA #$00
+  STA gamekid_ram+gi_var::bullet_y
+
+delete_enemy:
+  ; delete the enemy
+  LDY gamekid_ram+gi_var::num_enemies
+  DEY
+  LDA gamekid_ram+gi_var::enemy_x, Y
+  STA gamekid_ram+gi_var::enemy_x, X
+  LDA gamekid_ram+gi_var::enemy_y, Y
+  STA gamekid_ram+gi_var::enemy_y, X
+  LDA gamekid_ram+gi_var::enemy_direction, Y
+  STA gamekid_ram+gi_var::enemy_direction, X
+  STY gamekid_ram+gi_var::num_enemies
+
+next_collision_iteration:
+  DEX
+  BPL collision_loop
+  RTS
+.endproc
+
 .proc gi_playing
   JSR readjoy
   LDA buttons
@@ -1138,8 +1230,16 @@ wait_for_level:
 
   ; update bullet 
   LDA gamekid_ram+gi_var::bullet_y
-  BEQ :+
-
+  BEQ :++
+  CMP #$30
+  BNE :+
+  LDA #$00
+  STA gamekid_ram+gi_var::bullet_y
+  JMP :++
+:
+  .repeat 2
+  DEC gamekid_ram+gi_var::bullet_y
+  .endrepeat
 :
 
   ; update enemies
@@ -1199,47 +1299,7 @@ next_move:
   DEX
   BPL move_loop
 
-  ; check collision
-  LDX gamekid_ram+gi_var::num_enemies
-  DEX
-collision_loop:
-  LDA gamekid_ram+gi_var::enemy_y, X
-  CMP #$A2
-  BNE next_collision_iteration
-
-  ; if player_center >= enemy_x && player_center <= enemy_x + 16 then collided
-  ; player_center = player_x + 8
-  ; if player_x + 8 >= enemy_x && player_x + 8 <= enemy_x + 16 then collided
-  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
-  ; if player_x + 8 >= enemy_x && enemy_x + 8 >= player_x then collided
-  LDA gamekid_ram+gi_var::player_x
-  CLC
-  ADC #$08
-  CMP gamekid_ram+gi_var::enemy_x, X
-  BCC next_collision_iteration
-  
-  LDA gamekid_ram+gi_var::enemy_x, X
-  CLC
-  ADC #$08
-  CMP gamekid_ram+gi_var::player_x
-  BCC next_collision_iteration
-
-  ; delete the enemy
-  LDY gamekid_ram+gi_var::num_enemies
-  DEY
-  LDA gamekid_ram+gi_var::enemy_x, Y
-  STA gamekid_ram+gi_var::enemy_x, X
-  LDA gamekid_ram+gi_var::enemy_y, Y
-  STA gamekid_ram+gi_var::enemy_y, X
-  LDA gamekid_ram+gi_var::enemy_direction, Y
-  STA gamekid_ram+gi_var::enemy_direction, X
-  STY gamekid_ram+gi_var::num_enemies
-
-  ; reduce player lives
-
-next_collision_iteration:
-  DEX
-  BPL collision_loop
+  JSR gi_collisions
 
 skip_loop:
 
