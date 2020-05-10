@@ -1198,9 +1198,18 @@ collision_loop:
   CMP gamekid_ram+gi_var::player_x
   BCC next_collision_iteration
 
-  KIL
+  ; delete the enemy
+  LDY gamekid_ram+gi_var::num_enemies
+  DEY
+  LDA gamekid_ram+gi_var::enemy_x, Y
+  STA gamekid_ram+gi_var::enemy_x, X
+  LDA gamekid_ram+gi_var::enemy_y, Y
+  STA gamekid_ram+gi_var::enemy_y, X
+  LDA gamekid_ram+gi_var::enemy_direction, Y
+  STA gamekid_ram+gi_var::enemy_direction, X
+  STY gamekid_ram+gi_var::num_enemies
 
-  
+  ; reduce player lives
 
 next_collision_iteration:
   DEX
@@ -1242,6 +1251,16 @@ draw_loop:
   TAX
   DEX
   BPL draw_loop
+
+  ; ensure we erase sprites if we lost a metasprite before
+  LDX sprite_counter
+  LDA #$FF
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
 
 skip_draw_loop:
   RTS
