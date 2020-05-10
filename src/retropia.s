@@ -69,6 +69,7 @@ oam_sprites:
   gi_title
   gi_playing
   gi_win
+  gi_lose
 .endenum
 
 .importzp rng_seed
@@ -109,6 +110,7 @@ gamekid_ram: .res $100
 GI_MAX_ENEMIES=8
 .struct gi_var
   player_x .byte
+  player_lives .byte
   num_enemies .byte
   enemy_x .res 8
   enemy_y .res 8
@@ -951,9 +953,10 @@ return:
   ASL
   ASL
   ORA #$20
+  PHA
   STA ppu_addr_ptr+1
   print string_you_win
-  LDA ppu_addr_ptr+1
+  PLA
   STA PPUADDR
   LDA #$00
   STA PPUADDR
@@ -983,10 +986,26 @@ wait_for_level:
   BNE :+
   LDA #$00
   STA current_nametable
+
+  ; game setup
   LDA #game_states::gi_playing
   STA game_state
   LDA #$78
   STA gamekid_ram+gi_var::player_x
+  LDA #$05
+  STA gamekid_ram+gi_var::player_lives
+  TAX
+
+  LDA #$22
+  STA ppu_addr_ptr+1
+  LDA #$E6
+  STA ppu_addr_ptr
+  print string_lives
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR gi_partial_draw_level
@@ -1152,9 +1171,10 @@ check_left:
   STA gamekid_ram+gi_var::enemy_direction, X
 
 next_move:
-
   DEX
   BPL move_loop
+
+  ; check collision
 
 skip_loop:
 
@@ -1198,6 +1218,11 @@ skip_draw_loop:
 .endproc
 
 .proc gi_win
+  KIL
+  RTS
+.endproc
+
+.proc gi_lose
   KIL
   RTS
 .endproc
@@ -1275,6 +1300,7 @@ game_state_handlers_l:
   .byte <(gi_title-1)
   .byte <(gi_playing-1)
   .byte <(gi_win-1)
+  .byte <(gi_lose-1)
 
 game_state_handlers_h:
   .byte >(main_playing-1)
@@ -1287,6 +1313,7 @@ game_state_handlers_h:
   .byte >(gi_title-1)
   .byte >(gi_playing-1)
   .byte >(gi_win-1)
+  .byte >(gi_lose-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
@@ -1302,6 +1329,7 @@ gi_bullet_sprite = metasprite_3_data
 gi_enemy_sprite = metasprite_4_data
 
 strings:
+string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
 
 levels:
