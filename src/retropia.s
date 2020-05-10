@@ -111,10 +111,13 @@ GI_MAX_ENEMIES=8
 .struct gi_var
   player_x .byte
   player_lives .byte
+  total_enemies .byte
   num_enemies .byte
   enemy_x .res 8
   enemy_y .res 8
   enemy_direction .res 8
+  bullet_x .byte
+  bullet_y .byte
 .endstruct
 
 .segment "CODE"
@@ -987,7 +990,7 @@ wait_for_level:
   LDA #$00
   STA current_nametable
 
-  ; game setup
+  ; gi setup
   LDA #game_states::gi_playing
   STA game_state
   LDA #$78
@@ -1005,6 +1008,11 @@ wait_for_level:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
+
+  LDA #$20
+  STA gamekid_ram+gi_var::total_enemies
+  LDA #$00
+  STA gamekid_ram+gi_var::bullet_y
   
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
@@ -1114,6 +1122,24 @@ wait_for_level:
   CMP #$BD
   BEQ :+
   INC gamekid_ram+gi_var::player_x
+:
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  LDA gamekid_ram+gi_var::bullet_y
+  BNE :+
+  LDA #$A8
+  STA gamekid_ram+gi_var::bullet_y
+  LDA gamekid_ram+gi_var::player_x
+  CLC
+  ADC #$04
+  STA gamekid_ram+gi_var::bullet_x
+:
+
+  ; update bullet 
+  LDA gamekid_ram+gi_var::bullet_y
+  BEQ :+
+
 :
 
   ; update enemies
@@ -1251,6 +1277,20 @@ draw_loop:
   TAX
   DEX
   BPL draw_loop
+
+  LDA gamekid_ram+gi_var::bullet_y
+  BEQ :+
+
+  LDA #<gi_bullet_sprite
+  STA addr_ptr
+  LDA #>gi_bullet_sprite
+  STA addr_ptr+1
+  LDA gamekid_ram+gi_var::bullet_x
+  STA temp_x
+  LDA gamekid_ram+gi_var::bullet_y
+  STA temp_y
+  JSR display_metasprite
+:
 
   ; ensure we erase sprites if we lost a metasprite before
   LDX sprite_counter
