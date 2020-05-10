@@ -20,7 +20,7 @@ FT_DPCM_OFF= $c000
 
 ; workhouse keeper constants
 .enum wk_symbols
-  padding = $2D ; "-" 
+  padding = $2D ; "-"
   empty   = $20 ; " "
   wall    = $23 ; "#"
   box     = $6F ; "o"
@@ -104,6 +104,15 @@ gamekid_ram: .res $100
   box_xy .res 4
   old_xy .res 5
   start_xy .res 5
+.endstruct
+
+GI_MAX_ENEMIES=8
+.struct gi_var
+  player_x .byte
+  num_enemies .byte
+  enemy_x .res 8
+  enemy_y .res 8
+  enemy_direction .res 8
 .endstruct
 
 .segment "CODE"
@@ -577,7 +586,7 @@ loop:
   ; adding y*$20 to ppu_addr_ptr
   ; 76543210         76543210 76543210
   ; 000edcba x $20 = 000000ed cba00000
-  
+
   ; ed
   TYA
   .repeat 3
@@ -741,7 +750,7 @@ return:
   STA gamekid_ram+wk_var::old_xy,X
   DEX
   BPL :-
-  
+
   JSR readjoy
   LDA pressed_buttons
   AND #BUTTON_B
@@ -853,7 +862,7 @@ after_move:
   ; draw elements
   LDA #0
   STA sprite_counter
-  
+
   LDA #<wk_player_sprite
   STA addr_ptr
   LDA #>wk_player_sprite
@@ -976,6 +985,8 @@ wait_for_level:
   STA current_nametable
   LDA #game_states::gi_playing
   STA game_state
+  LDA #$78
+  STA gamekid_ram+gi_var::player_x
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR gi_partial_draw_level
@@ -1006,7 +1017,7 @@ wait_for_level:
   ; adding y*$20 to ppu_addr_ptr
   ; 76543210         76543210 76543210
   ; 000edcba x $20 = 000000ed cba00000
-  
+
   ; ed
   TYA
   .repeat 3
@@ -1066,7 +1077,123 @@ wait_for_level:
 .endproc
 
 .proc gi_playing
-  KIL
+  JSR readjoy
+  LDA buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+
+  LDA gamekid_ram+gi_var::player_x
+  CMP #$32
+  BEQ :+
+  DEC gamekid_ram+gi_var::player_x
+:
+  LDA buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+
+  LDA gamekid_ram+gi_var::player_x
+  CMP #$BD
+  BEQ :+
+  INC gamekid_ram+gi_var::player_x
+:
+
+  ; update enemies
+  LDA gamekid_ram+gi_var::num_enemies
+  CMP #GI_MAX_ENEMIES
+  BEQ move_enemies
+
+  ; maybe add an enemy
+  LDA nmis
+  AND #%111111
+  BNE move_enemies
+  JSR rand
+  LDA rng_seed
+  AND #%111
+  BNE move_enemies
+
+  LDX gamekid_ram+gi_var::num_enemies
+  INC gamekid_ram+gi_var::num_enemies
+
+  LDA #$32
+  STA gamekid_ram+gi_var::enemy_x, X
+  STA gamekid_ram+gi_var::enemy_y, X
+  LDA #$01
+  STA gamekid_ram+gi_var::enemy_direction, X
+
+move_enemies:
+  LDA gamekid_ram+gi_var::num_enemies
+  BEQ skip_loop
+  TAX
+  DEX
+move_loop:
+  LDA gamekid_ram+gi_var::enemy_direction, X
+  CLC
+  ADC gamekid_ram+gi_var::enemy_x, X
+  STA gamekid_ram+gi_var::enemy_x, X
+  CMP #$BB
+  BNE check_left
+  DEC gamekid_ram+gi_var::enemy_x, X
+  LDA gamekid_ram+gi_var::enemy_y, X
+  CLC
+  ADC #$08
+  STA gamekid_ram+gi_var::enemy_y, X
+  LDA #$FF
+  STA gamekid_ram+gi_var::enemy_direction, X
+  JMP next_move
+check_left:
+  CMP #$31
+  BNE next_move
+  INC gamekid_ram+gi_var::enemy_x, X
+  LDA gamekid_ram+gi_var::enemy_y, X
+  CLC
+  ADC #$08
+  STA gamekid_ram+gi_var::enemy_y, X
+  LDA #$01
+  STA gamekid_ram+gi_var::enemy_direction, X
+
+next_move:
+
+  DEX
+  BPL move_loop
+
+skip_loop:
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+  LDA #<gi_player_sprite
+  STA addr_ptr
+  LDA #>gi_player_sprite
+  STA addr_ptr+1
+  LDA gamekid_ram+gi_var::player_x
+  STA temp_x
+  LDA #$A8
+  STA temp_y
+  JSR display_metasprite
+
+  LDA #<gi_enemy_sprite
+  STA addr_ptr
+  LDA #>gi_enemy_sprite
+  STA addr_ptr+1
+
+  LDA gamekid_ram+gi_var::num_enemies
+  BEQ skip_draw_loop
+  TAX
+  DEX
+draw_loop:
+  LDA gamekid_ram+gi_var::enemy_x, X
+  STA temp_x
+  LDA gamekid_ram+gi_var::enemy_y, X
+  STA temp_y
+  TXA
+  PHA
+  JSR display_metasprite
+  PLA
+  TAX
+  DEX
+  BPL draw_loop
+
+skip_draw_loop:
   RTS
 .endproc
 
@@ -1170,6 +1297,9 @@ sprites:
 
 wk_box_sprite = metasprite_0_data
 wk_player_sprite = metasprite_1_data
+gi_player_sprite = metasprite_2_data
+gi_bullet_sprite = metasprite_3_data
+gi_enemy_sprite = metasprite_4_data
 
 strings:
 string_you_win: .byte "YOU", $5B, "WIN", $00
