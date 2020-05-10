@@ -1119,6 +1119,35 @@ row_loop:
   RTS
 .endproc
 
+.proc gi_lose_life
+  ; subroutine to cause and deal with life loss
+  TXA
+  PHA
+  DEC gamekid_ram+gi_var::player_lives
+  LDX gamekid_ram+gi_var::player_lives
+
+  LDA #$22
+  STA ppu_addr_ptr+1
+  LDA #$E6
+  STA ppu_addr_ptr
+  print string_lives
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
+  LDA gamekid_ram+gi_var::player_lives
+  BNE no_death
+
+  LDA #game_states::gi_lose
+  STA game_state
+
+no_death:
+  PLA
+  TAX
+  RTS
+.endproc
+
 .proc gi_collisions
   ; subroutine for player-enemy and bullet-enemy collisions
   ; (mostly to avoid long jmp)
@@ -1149,8 +1178,8 @@ collision_loop:
   BCC next_collision_iteration
 
   ; reduce player lives
-  ; TODO
-
+  JSR gi_lose_life
+  
   JMP delete_enemy
 
 check_bullet_collision:
