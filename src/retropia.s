@@ -1074,20 +1074,36 @@ wait_for_level:
   STA PPUADDR
 
   LDX #$09
-:
+row_loop:
   JSR rand
+  LDA rng_seed
+  AND #%1100
+  BEQ :+
+  LDA #$C8
+  JMP :++
+:
   LDA rng_seed
   AND #%11
   CLC
   ADC #$C8
+:
   STA PPUDATA
+
+
+  LDA rng_seed+1
+  AND #%1100
+  BEQ :+
+  LDA #$C8
+  JMP :++
+:
   LDA rng_seed+1
   AND #%11
   CLC
   ADC #$C8
+:
   STA PPUDATA
   DEX
-  BPL :-
+  BPL row_loop
 
   LDA current_nametable
   ASL
