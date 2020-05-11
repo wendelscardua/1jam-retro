@@ -1332,7 +1332,11 @@ less_likely:
   LDA #$32
   STA gamekid_ram+gi_var::enemy_x, X
   STA gamekid_ram+gi_var::enemy_y, X
-  LDA #$01
+
+  LDA rng_seed+1
+  AND #%1
+  CLC
+  ADC #$01
   STA gamekid_ram+gi_var::enemy_direction, X
 
 move_enemies:
@@ -1346,24 +1350,34 @@ move_loop:
   STA gamekid_ram+gi_var::enemy_x, X
   CMP #$BB
   BCC check_left
-  DEC gamekid_ram+gi_var::enemy_x, X
+  LDA #$BB
+  STA gamekid_ram+gi_var::enemy_x, X
   LDA gamekid_ram+gi_var::enemy_y, X
   CLC
   ADC #$10
   STA gamekid_ram+gi_var::enemy_y, X
-  LDA #$FF
+
+  LDA rng_seed+1
+  AND #%1
+  CLC
+  ADC #$FE
   STA gamekid_ram+gi_var::enemy_direction, X
+
   JMP next_move
 check_left:
   LDA #$31
   CMP gamekid_ram+gi_var::enemy_x, X
   BCC next_move
-  INC gamekid_ram+gi_var::enemy_x, X
+  STA gamekid_ram+gi_var::enemy_x, X
   LDA gamekid_ram+gi_var::enemy_y, X
   CLC
   ADC #$10
   STA gamekid_ram+gi_var::enemy_y, X
-  LDA #$01
+
+  LDA rng_seed+1
+  AND #%1
+  CLC
+  ADC #$01
   STA gamekid_ram+gi_var::enemy_direction, X
 
 next_move:
