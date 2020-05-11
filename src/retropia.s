@@ -108,6 +108,7 @@ gamekid_ram: .res $100
 .endstruct
 
 GI_MAX_ENEMIES=8
+GI_TOTAL_ENEMIES=30
 .struct gi_var
   player_x .byte
   player_lives .byte
@@ -1009,7 +1010,7 @@ wait_for_level:
   LDA #$00
   STA PPUADDR
 
-  LDA #$20
+  LDA #GI_TOTAL_ENEMIES
   STA gamekid_ram+gi_var::total_enemies
   LDA #$00
   STA gamekid_ram+gi_var::bullet_y
@@ -1253,6 +1254,44 @@ next_collision_iteration:
   RTS
 .endproc
 
+.proc gi_set_enemy_speed
+  ; input X = current enemy index
+  ; if there's few enemies left it can be faster, randomly
+  ; else it'll be simply +1 / -1
+  CLC
+  LDA gamekid_ram+gi_var::total_enemies
+  ADC gamekid_ram+gi_var::num_enemies
+  CLC
+  CMP #(GI_TOTAL_ENEMIES/2)
+  BCC maybe_faster
+normal_speed:
+  LDA gamekid_ram+gi_var::enemy_direction, X
+  AND #$F0
+  BEQ normal_negative
+normal_positive:
+  LDA #$01
+  JMP return
+normal_negative:
+  LDA #$FF
+  JMP return
+maybe_faster:
+  LDA rng_seed+1
+  AND #%1
+  BEQ normal_speed
+  LDA gamekid_ram+gi_var::enemy_direction, X
+  AND #$F0
+  BEQ faster_negative
+faster_positive:
+  LDA #$02
+  JMP return
+faster_negative:
+  LDA #$FE
+  ; implicit JMP return
+return:
+  STA gamekid_ram+gi_var::enemy_direction, X
+  RTS
+.endproc
+
 .proc gi_playing
   JSR readjoy
   LDA buttons
@@ -1336,12 +1375,9 @@ less_likely:
   STA gamekid_ram+gi_var::enemy_x, X
   STA gamekid_ram+gi_var::enemy_y, X
 
-  LDA rng_seed+1
-  AND #%1
-  CLC
-  ADC #$01
+  LDA #$FF
   STA gamekid_ram+gi_var::enemy_direction, X
-
+  JSR gi_set_enemy_speed
   DEC gamekid_ram+gi_var::total_enemies
 
 move_enemies:
@@ -1362,11 +1398,7 @@ move_loop:
   ADC #$10
   STA gamekid_ram+gi_var::enemy_y, X
 
-  LDA rng_seed+1
-  AND #%1
-  CLC
-  ADC #$FE
-  STA gamekid_ram+gi_var::enemy_direction, X
+  JSR gi_set_enemy_speed
 
   JMP next_move
 check_left:
@@ -1379,11 +1411,7 @@ check_left:
   ADC #$10
   STA gamekid_ram+gi_var::enemy_y, X
 
-  LDA rng_seed+1
-  AND #%1
-  CLC
-  ADC #$01
-  STA gamekid_ram+gi_var::enemy_direction, X
+  JSR gi_set_enemy_speed
 
 next_move:
   DEX
