@@ -275,7 +275,7 @@ forever:
   BEQ etc
   STA old_nmis
   ; new frame code
-  ; JSR rand
+  JSR rand
   JSR game_state_handler
   ; JSR FamiToneUpdate
 
@@ -1310,8 +1310,20 @@ next_collision_iteration:
   AND #%11111
   BNE move_enemies
   JSR rand
-  LDA rng_seed
-  AND #%111
+
+  LDA gamekid_ram+gi_var::num_enemies
+  BNE unlikely
+  LDA #%0
+  JMP :+
+unlikely:
+  CMP #$04
+  BCS less_likely
+  LDA #%1
+  JMP :+
+less_likely:
+  LDA #%11
+:
+  AND rng_seed
   BNE move_enemies
 
   LDX gamekid_ram+gi_var::num_enemies
