@@ -950,12 +950,12 @@ return:
 .endproc
 
 .proc wk_win
-  LDA #$CC
+  LDA #$AC
   STA ppu_addr_ptr
   LDA current_nametable
   ASL
   ASL
-  ORA #$20
+  ORA #$21
   PHA
   STA ppu_addr_ptr+1
   print string_you_win
@@ -1306,6 +1306,9 @@ next_collision_iteration:
   BEQ move_enemies
 
   ; maybe add an enemy
+  LDA gamekid_ram+gi_var::total_enemies
+  BEQ move_enemies
+
   LDA nmis
   AND #%11111
   BNE move_enemies
@@ -1338,6 +1341,8 @@ less_likely:
   CLC
   ADC #$01
   STA gamekid_ram+gi_var::enemy_direction, X
+
+  DEC gamekid_ram+gi_var::total_enemies
 
 move_enemies:
   LDX gamekid_ram+gi_var::num_enemies
@@ -1450,11 +1455,30 @@ skip_draw_loop:
   .endrepeat
   BNE :-
 
+  ; win?
+  CLC
+  LDA gamekid_ram+gi_var::num_enemies
+  ADC gamekid_ram+gi_var::total_enemies
+  BNE :+
+  
+  LDA #game_states::gi_win
+  STA game_state
+
+:
   RTS
 .endproc
 
 .proc gi_win
-  KIL
+  LDA #$21
+  STA ppu_addr_ptr+1
+  LDA #$AC
+  STA ppu_addr_ptr
+  print string_you_win
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  KIL ; TODO - return to main game (with fireball power)
   RTS
 .endproc
 
