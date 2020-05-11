@@ -1456,6 +1456,8 @@ skip_draw_loop:
   BNE :-
 
   ; win?
+  LDA gamekid_ram+gi_var::player_lives
+  BEQ :+
   CLC
   LDA gamekid_ram+gi_var::num_enemies
   ADC gamekid_ram+gi_var::total_enemies
