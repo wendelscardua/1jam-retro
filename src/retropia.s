@@ -1013,6 +1013,7 @@ wait_for_level:
   STA gamekid_ram+gi_var::total_enemies
   LDA #$00
   STA gamekid_ram+gi_var::bullet_y
+  STA gamekid_ram+gi_var::num_enemies
   
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
@@ -1141,6 +1142,18 @@ row_loop:
 
   LDA #game_states::gi_lose
   STA game_state
+
+  LDA #$21
+  STA ppu_addr_ptr+1
+  LDA #$AB
+  STA ppu_addr_ptr
+  print string_game_over
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
+  STA frame_counter
 
 no_death:
   PLA
@@ -1361,15 +1374,16 @@ skip_loop:
   STA temp_y
   JSR display_metasprite
 
+  LDA gamekid_ram+gi_var::num_enemies
+  BEQ skip_draw_loop
+  TAX
+  DEX
+
   LDA #<gi_enemy_sprite
   STA addr_ptr
   LDA #>gi_enemy_sprite
   STA addr_ptr+1
 
-  LDA gamekid_ram+gi_var::num_enemies
-  BEQ skip_draw_loop
-  TAX
-  DEX
 draw_loop:
   LDA gamekid_ram+gi_var::enemy_x, X
   STA temp_x
@@ -1382,6 +1396,8 @@ draw_loop:
   TAX
   DEX
   BPL draw_loop
+
+skip_draw_loop:
 
   LDA gamekid_ram+gi_var::bullet_y
   BEQ :+
@@ -1399,7 +1415,7 @@ draw_loop:
 
   ; ensure we erase sprites if we lost a metasprite before
   LDX sprite_counter
-  LDA #$FF
+  LDA #$F0
 :
   STA oam_sprites+Sprite::ycoord, X
   .repeat .sizeof(Sprite)
@@ -1407,7 +1423,6 @@ draw_loop:
   .endrepeat
   BNE :-
 
-skip_draw_loop:
   RTS
 .endproc
 
@@ -1417,7 +1432,28 @@ skip_draw_loop:
 .endproc
 
 .proc gi_lose
-  KIL
+  INC frame_counter
+  LDA frame_counter
+  CMP #GAMEKID_DELAY
+  BNE return
+
+  ; erase sprites
+  LDA #$F0
+  LDX #$00
+:
+  STA oam_sprites+Sprite::ycoord,X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+  
+  ; back to title
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::gi_title
+  STA game_state
+
+return:
   RTS
 .endproc
 
@@ -1523,6 +1559,7 @@ gi_bullet_sprite = metasprite_3_data
 gi_enemy_sprite = metasprite_4_data
 
 strings:
+string_game_over: .byte "GAME", $5B, "OVER", $00
 string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
 
