@@ -20,7 +20,7 @@ FT_DPCM_OFF= $c000
 
 ; workhouse keeper constants
 .enum wk_symbols
-  padding = $2D ; "-" 
+  padding = $2D ; "-"
   empty   = $20 ; " "
   wall    = $23 ; "#"
   box     = $6F ; "o"
@@ -64,6 +64,12 @@ oam_sprites:
   wk_load_next_level
   wk_playing
   wk_win
+  ; gi = galaxy intruders (pew pew)
+  gi_booting_gamekid
+  gi_title
+  gi_playing
+  gi_win
+  gi_lose
 .endenum
 
 .importzp rng_seed
@@ -99,6 +105,20 @@ gamekid_ram: .res $100
   box_xy .res 4
   old_xy .res 5
   start_xy .res 5
+.endstruct
+
+GI_MAX_ENEMIES=8
+GI_TOTAL_ENEMIES=30
+.struct gi_var
+  player_x .byte
+  player_lives .byte
+  total_enemies .byte
+  num_enemies .byte
+  enemy_x .res 8
+  enemy_y .res 8
+  enemy_direction .res 8
+  bullet_x .byte
+  bullet_y .byte
 .endstruct
 
 .segment "CODE"
@@ -244,7 +264,8 @@ vblankwait:       ; wait for another vblank before continuing
   ; LDA #1
   ; JSR FamiToneSfxInit
 
-  LDA #game_states::wk_booting_gamekid
+  ; LDA #game_states::wk_booting_gamekid
+  LDA #game_states::gi_booting_gamekid
   STA game_state
   LDA #$00
   STA frame_counter
@@ -255,7 +276,7 @@ forever:
   BEQ etc
   STA old_nmis
   ; new frame code
-  ; JSR rand
+  JSR rand
   JSR game_state_handler
   ; JSR FamiToneUpdate
 
@@ -437,7 +458,9 @@ exit:
   RTS
 .endproc
 
-.proc wk_booting_gamekid
+.proc gk_booting_gamekid
+  ; generic "state"
+
   LDA frame_counter
   BNE wait_for_title
   ; load gamekid screen
@@ -446,9 +469,12 @@ exit:
   LDA #>nametable_gamekid_boot
   STA rle_ptr+1
   ; ... and also wk title
-  LDA #<nametable_wk_title
+  LDX game_state
+  LDA subgame_by_game_state,X
+  TAX
+  LDA subgame_nametables_l,X
   STA addr_ptr
-  LDA #>nametable_wk_title
+  LDA subgame_nametables_h,X
   STA addr_ptr+1
   JSR load_level
 
@@ -458,11 +484,16 @@ wait_for_title:
   LDA #GAMEKID_DELAY ; wait a second
   CMP frame_counter
   BNE :+
-  LDA #game_states::wk_title
-  STA game_state
+  INC game_state ; XXX assume ??-title comes after ??-booting
   LDA #$00
   STA frame_counter
+  RTS
 :
+  RTS
+.endproc
+
+.proc wk_booting_gamekid
+  JSR gk_booting_gamekid
   RTS
 .endproc
 
@@ -561,7 +592,7 @@ loop:
   ; adding y*$20 to ppu_addr_ptr
   ; 76543210         76543210 76543210
   ; 000edcba x $20 = 000000ed cba00000
-  
+
   ; ed
   TYA
   .repeat 3
@@ -725,7 +756,7 @@ return:
   STA gamekid_ram+wk_var::old_xy,X
   DEX
   BPL :-
-  
+
   JSR readjoy
   LDA pressed_buttons
   AND #BUTTON_B
@@ -837,7 +868,7 @@ after_move:
   ; draw elements
   LDA #0
   STA sprite_counter
-  
+
   LDA #<wk_player_sprite
   STA addr_ptr
   LDA #>wk_player_sprite
@@ -920,19 +951,590 @@ return:
 .endproc
 
 .proc wk_win
-  LDA #$CC
+  LDA #$AC
   STA ppu_addr_ptr
   LDA current_nametable
   ASL
   ASL
-  ORA #$20
+  ORA #$21
+  PHA
   STA ppu_addr_ptr+1
   print string_you_win
-  LDA ppu_addr_ptr+1
+  PLA
   STA PPUADDR
   LDA #$00
   STA PPUADDR
   KIL ; TODO - return to main game (with push power)
+  RTS
+.endproc
+
+.proc gi_booting_gamekid
+  LDA #game_states::gi_title
+  JSR gk_booting_gamekid
+  RTS
+.endproc
+
+.proc gi_title
+  LDA frame_counter
+  BNE wait_for_level
+
+  ; insta scroll to title
+  LDA #$01
+  STA current_nametable
+
+wait_for_level:
+  ; TODO: optimize
+  INC frame_counter
+  LDA #GAMEKID_DELAY ; wait a second
+  CMP frame_counter
+  BNE :+
+  LDA #$00
+  STA current_nametable
+
+  ; gi setup
+  LDA #game_states::gi_playing
+  STA game_state
+  LDA #$78
+  STA gamekid_ram+gi_var::player_x
+  LDA #$05
+  STA gamekid_ram+gi_var::player_lives
+  TAX
+
+  LDA #$22
+  STA ppu_addr_ptr+1
+  LDA #$E6
+  STA ppu_addr_ptr
+  print string_lives
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
+  LDA #GI_TOTAL_ENEMIES
+  STA gamekid_ram+gi_var::total_enemies
+  LDA #$00
+  STA gamekid_ram+gi_var::bullet_y
+  STA gamekid_ram+gi_var::num_enemies
+  
+:
+  ; use the wait to draw the level bg, row by row (gotta go fast)
+  JSR gi_partial_draw_level
+  RTS
+.endproc
+
+.proc gi_partial_draw_level
+  LDA frame_counter
+  CMP #$06
+  BCS :+
+  RTS
+:
+  CMP #$18
+  BCC :+
+  RTS
+:
+
+  TAY
+  LDA current_nametable
+  EOR #%1
+  ASL
+  ASL
+  ORA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+
+  ; adding y*$20 to ppu_addr_ptr
+  ; 76543210         76543210 76543210
+  ; 000edcba x $20 = 000000ed cba00000
+
+  ; ed
+  TYA
+  .repeat 3
+  LSR
+  .endrepeat
+  CLC
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+
+  ; cba
+  TYA
+  .repeat 5
+  ASL
+  .endrepeat
+  CLC
+  ADC #$06 ; X offset
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+  LDA PPUSTATUS
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  LDX #$09
+row_loop:
+  JSR rand
+  LDA rng_seed
+  AND #%1100
+  BEQ :+
+  LDA #$C8
+  JMP :++
+:
+  LDA rng_seed
+  AND #%11
+  CLC
+  ADC #$C8
+:
+  STA PPUDATA
+
+
+  LDA rng_seed+1
+  AND #%1100
+  BEQ :+
+  LDA #$C8
+  JMP :++
+:
+  LDA rng_seed+1
+  AND #%11
+  CLC
+  ADC #$C8
+:
+  STA PPUDATA
+  DEX
+  BPL row_loop
+
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  LDA #$00 ; horizontal scroll
+  STA PPUSCROLL
+  STA PPUSCROLL
+
+  RTS
+.endproc
+
+.proc gi_lose_life
+  ; subroutine to cause and deal with life loss
+  TXA
+  PHA
+  DEC gamekid_ram+gi_var::player_lives
+  LDX gamekid_ram+gi_var::player_lives
+
+  LDA #$22
+  STA ppu_addr_ptr+1
+  LDA #$E6
+  STA ppu_addr_ptr
+  print string_lives
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
+  LDA gamekid_ram+gi_var::player_lives
+  BNE no_death
+
+  LDA #game_states::gi_lose
+  STA game_state
+
+  LDA #$21
+  STA ppu_addr_ptr+1
+  LDA #$AB
+  STA ppu_addr_ptr
+  print string_game_over
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
+  STA frame_counter
+
+no_death:
+  PLA
+  TAX
+  RTS
+.endproc
+
+.proc gi_collisions
+  ; subroutine for player-enemy and bullet-enemy collisions
+  ; (mostly to avoid long jmp)
+  LDX gamekid_ram+gi_var::num_enemies
+  DEX
+collision_loop:
+  LDA gamekid_ram+gi_var::enemy_y, X
+
+  ; enemy-player collision
+  CMP #$A2
+  BNE check_bullet_collision
+
+  ; if player_center >= enemy_x && player_center <= enemy_x + 16 then collided
+  ; player_center = player_x + 8
+  ; if player_x + 8 >= enemy_x && player_x + 8 <= enemy_x + 16 then collided
+  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
+  ; if player_x + 8 >= enemy_x && enemy_x + 8 >= player_x then collided
+  LDA gamekid_ram+gi_var::player_x
+  CLC
+  ADC #$08
+  CMP gamekid_ram+gi_var::enemy_x, X
+  BCC next_collision_iteration
+  
+  LDA gamekid_ram+gi_var::enemy_x, X
+  CLC
+  ADC #$08
+  CMP gamekid_ram+gi_var::player_x
+  BCC next_collision_iteration
+
+  ; reduce player lives
+  JSR gi_lose_life
+  
+  JMP delete_enemy
+
+check_bullet_collision:
+  ; enemy-bullet collision
+  ; if bullet_center >= enemy_x && bullet_center <= enemy_x + 16 then collided
+  ; bullet_center = bullet_x + 4
+  ; if bullet_x + 4 >= enemy_x && bullet_x + 4 <= enemy_x + 16 then collided
+  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
+  ; if bullet_x + 4 >= enemy_x && enemy_x + 12 >= bullet_x then collided
+  LDA gamekid_ram+gi_var::bullet_x
+  CLC
+  ADC #$04
+  CMP gamekid_ram+gi_var::enemy_x, X
+  BCC next_collision_iteration
+  
+  LDA gamekid_ram+gi_var::enemy_x, X
+  CLC
+  ADC #$0C
+  CMP gamekid_ram+gi_var::bullet_x
+  BCC next_collision_iteration
+
+  ; if bullet_center >= enemy_y && bullet_center <= enemy_y + 8 then collided
+  ; bullet_center = bullet_y + 4
+  ; if bullet_y + 4 >= enemy_y && bullet_y + 4 <= enemy_y + 8 then collided
+  ; CMP compares A >= M, so rewriting all calculations on the "A" side...
+  ; if bullet_y + 4 >= enemy_y && enemy_y + 4 >= bullet_y then collided
+  LDA gamekid_ram+gi_var::bullet_y
+  CLC
+  ADC #$04
+  CMP gamekid_ram+gi_var::enemy_y, X
+  BCC next_collision_iteration
+  
+  LDA gamekid_ram+gi_var::enemy_y, X
+  CLC
+  ADC #$04
+  CMP gamekid_ram+gi_var::bullet_y
+  BCC next_collision_iteration
+
+  ; delete bullet
+  LDA #$00
+  STA gamekid_ram+gi_var::bullet_y
+
+delete_enemy:
+  ; delete the enemy
+  LDY gamekid_ram+gi_var::num_enemies
+  DEY
+  LDA gamekid_ram+gi_var::enemy_x, Y
+  STA gamekid_ram+gi_var::enemy_x, X
+  LDA gamekid_ram+gi_var::enemy_y, Y
+  STA gamekid_ram+gi_var::enemy_y, X
+  LDA gamekid_ram+gi_var::enemy_direction, Y
+  STA gamekid_ram+gi_var::enemy_direction, X
+  STY gamekid_ram+gi_var::num_enemies
+
+next_collision_iteration:
+  DEX
+  BPL collision_loop
+  RTS
+.endproc
+
+.proc gi_set_enemy_speed
+  ; input X = current enemy index
+  ; if there's few enemies left it can be faster, randomly
+  ; else it'll be simply +1 / -1
+  CLC
+  LDA gamekid_ram+gi_var::total_enemies
+  ADC gamekid_ram+gi_var::num_enemies
+  CLC
+  CMP #(GI_TOTAL_ENEMIES/2)
+  BCC maybe_faster
+normal_speed:
+  LDA gamekid_ram+gi_var::enemy_direction, X
+  AND #$F0
+  BEQ normal_negative
+normal_positive:
+  LDA #$01
+  JMP return
+normal_negative:
+  LDA #$FF
+  JMP return
+maybe_faster:
+  LDA rng_seed+1
+  AND #%1
+  BEQ normal_speed
+  LDA gamekid_ram+gi_var::enemy_direction, X
+  AND #$F0
+  BEQ faster_negative
+faster_positive:
+  LDA #$02
+  JMP return
+faster_negative:
+  LDA #$FE
+  ; implicit JMP return
+return:
+  STA gamekid_ram+gi_var::enemy_direction, X
+  RTS
+.endproc
+
+.proc gi_playing
+  JSR readjoy
+  LDA buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+
+  LDA gamekid_ram+gi_var::player_x
+  CMP #$32
+  BEQ :+
+  DEC gamekid_ram+gi_var::player_x
+:
+  LDA buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+
+  LDA gamekid_ram+gi_var::player_x
+  CMP #$BD
+  BEQ :+
+  INC gamekid_ram+gi_var::player_x
+:
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  LDA gamekid_ram+gi_var::bullet_y
+  BNE :+
+  LDA #$A8
+  STA gamekid_ram+gi_var::bullet_y
+  LDA gamekid_ram+gi_var::player_x
+  CLC
+  ADC #$04
+  STA gamekid_ram+gi_var::bullet_x
+:
+
+  ; update bullet 
+  LDA gamekid_ram+gi_var::bullet_y
+  BEQ :++
+  CMP #$30
+  BNE :+
+  LDA #$00
+  STA gamekid_ram+gi_var::bullet_y
+  JMP :++
+:
+  .repeat 2
+  DEC gamekid_ram+gi_var::bullet_y
+  .endrepeat
+:
+
+  ; update enemies
+  LDA gamekid_ram+gi_var::num_enemies
+  CMP #GI_MAX_ENEMIES
+  BEQ move_enemies
+
+  ; maybe add an enemy
+  LDA gamekid_ram+gi_var::total_enemies
+  BEQ move_enemies
+
+  LDA nmis
+  AND #%11111
+  BNE move_enemies
+  JSR rand
+
+  LDA gamekid_ram+gi_var::num_enemies
+  BNE unlikely
+  LDA #%0
+  JMP :+
+unlikely:
+  CMP #$04
+  BCS less_likely
+  LDA #%1
+  JMP :+
+less_likely:
+  LDA #%11
+:
+  AND rng_seed
+  BNE move_enemies
+
+  LDX gamekid_ram+gi_var::num_enemies
+  INC gamekid_ram+gi_var::num_enemies
+
+  LDA #$32
+  STA gamekid_ram+gi_var::enemy_x, X
+  STA gamekid_ram+gi_var::enemy_y, X
+
+  LDA #$FF
+  STA gamekid_ram+gi_var::enemy_direction, X
+  JSR gi_set_enemy_speed
+  DEC gamekid_ram+gi_var::total_enemies
+
+move_enemies:
+  LDX gamekid_ram+gi_var::num_enemies
+  BEQ skip_loop
+  DEX
+move_loop:
+  LDA gamekid_ram+gi_var::enemy_direction, X
+  CLC
+  ADC gamekid_ram+gi_var::enemy_x, X
+  STA gamekid_ram+gi_var::enemy_x, X
+  CMP #$BB
+  BCC check_left
+  LDA #$BB
+  STA gamekid_ram+gi_var::enemy_x, X
+  LDA gamekid_ram+gi_var::enemy_y, X
+  CLC
+  ADC #$10
+  STA gamekid_ram+gi_var::enemy_y, X
+
+  JSR gi_set_enemy_speed
+
+  JMP next_move
+check_left:
+  LDA #$31
+  CMP gamekid_ram+gi_var::enemy_x, X
+  BCC next_move
+  STA gamekid_ram+gi_var::enemy_x, X
+  LDA gamekid_ram+gi_var::enemy_y, X
+  CLC
+  ADC #$10
+  STA gamekid_ram+gi_var::enemy_y, X
+
+  JSR gi_set_enemy_speed
+
+next_move:
+  DEX
+  BPL move_loop
+
+  JSR gi_collisions
+
+skip_loop:
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+  LDA #<gi_player_sprite
+  STA addr_ptr
+  LDA #>gi_player_sprite
+  STA addr_ptr+1
+  LDA gamekid_ram+gi_var::player_x
+  STA temp_x
+  LDA #$A8
+  STA temp_y
+  JSR display_metasprite
+
+  LDA gamekid_ram+gi_var::num_enemies
+  BEQ skip_draw_loop
+  TAX
+  DEX
+
+  LDA #<gi_enemy_sprite
+  STA addr_ptr
+  LDA #>gi_enemy_sprite
+  STA addr_ptr+1
+
+draw_loop:
+  LDA gamekid_ram+gi_var::enemy_x, X
+  STA temp_x
+  LDA gamekid_ram+gi_var::enemy_y, X
+  STA temp_y
+  TXA
+  PHA
+  JSR display_metasprite
+  PLA
+  TAX
+  DEX
+  BPL draw_loop
+
+skip_draw_loop:
+
+  LDA gamekid_ram+gi_var::bullet_y
+  BEQ :+
+
+  LDA #<gi_bullet_sprite
+  STA addr_ptr
+  LDA #>gi_bullet_sprite
+  STA addr_ptr+1
+  LDA gamekid_ram+gi_var::bullet_x
+  STA temp_x
+  LDA gamekid_ram+gi_var::bullet_y
+  STA temp_y
+  JSR display_metasprite
+:
+
+  ; ensure we erase sprites if we lost a metasprite before
+  LDX sprite_counter
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
+  ; win?
+  LDA gamekid_ram+gi_var::player_lives
+  BEQ :+
+  CLC
+  LDA gamekid_ram+gi_var::num_enemies
+  ADC gamekid_ram+gi_var::total_enemies
+  BNE :+
+  
+  LDA #game_states::gi_win
+  STA game_state
+
+:
+  RTS
+.endproc
+
+.proc gi_win
+  LDA #$21
+  STA ppu_addr_ptr+1
+  LDA #$AC
+  STA ppu_addr_ptr
+  print string_you_win
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  KIL ; TODO - return to main game (with fireball power)
+  RTS
+.endproc
+
+.proc gi_lose
+  INC frame_counter
+  LDA frame_counter
+  CMP #GAMEKID_DELAY
+  BNE return
+
+  ; erase sprites
+  LDA #$F0
+  LDX #$00
+:
+  STA oam_sprites+Sprite::ycoord,X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+  
+  ; back to title
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::gi_title
+  STA game_state
+
+return:
   RTS
 .endproc
 
@@ -1005,6 +1607,12 @@ game_state_handlers_l:
   .byte <(wk_load_next_level-1)
   .byte <(wk_playing-1)
   .byte <(wk_win-1)
+  .byte <(gi_booting_gamekid-1)
+  .byte <(gi_title-1)
+  .byte <(gi_playing-1)
+  .byte <(gi_win-1)
+  .byte <(gi_lose-1)
+
 game_state_handlers_h:
   .byte >(main_playing-1)
   .byte >(wk_booting_gamekid-1)
@@ -1012,6 +1620,11 @@ game_state_handlers_h:
   .byte >(wk_load_next_level-1)
   .byte >(wk_playing-1)
   .byte >(wk_win-1)
+  .byte >(gi_booting_gamekid-1)
+  .byte >(gi_title-1)
+  .byte >(gi_playing-1)
+  .byte >(gi_win-1)
+  .byte >(gi_lose-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
@@ -1022,8 +1635,13 @@ sprites:
 
 wk_box_sprite = metasprite_0_data
 wk_player_sprite = metasprite_1_data
+gi_player_sprite = metasprite_2_data
+gi_bullet_sprite = metasprite_3_data
+gi_enemy_sprite = metasprite_4_data
 
 strings:
+string_game_over: .byte "GAME", $5B, "OVER", $00
+string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
 
 levels:
@@ -1084,6 +1702,21 @@ wk_level_3_data:
 nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
 nametable_wk_title: .incbin "../assets/wk-level/title.rle"
+nametable_gi_title: .incbin "../assets/gi-level/title.rle"
+
+subgame_by_game_state:
+        .byte $00 ; main
+        .byte $01, $01, $01, $01, $01 ; WK
+        .byte $02, $02, $02, $02 ; GI
+
+subgame_nametables_l:
+        .byte $00
+        .byte <nametable_wk_title
+        .byte <nametable_gi_title
+subgame_nametables_h:
+        .byte $00
+        .byte >nametable_wk_title
+        .byte >nametable_gi_title
 
 ; music and sfx data
 ;.include "../assets/music/some-music.s"
