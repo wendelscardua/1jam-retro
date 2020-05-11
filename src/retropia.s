@@ -1307,7 +1307,7 @@ next_collision_iteration:
 
   ; maybe add an enemy
   LDA nmis
-  AND #%111111
+  AND #%11111
   BNE move_enemies
   JSR rand
   LDA rng_seed
@@ -1333,22 +1333,23 @@ move_loop:
   ADC gamekid_ram+gi_var::enemy_x, X
   STA gamekid_ram+gi_var::enemy_x, X
   CMP #$BB
-  BNE check_left
+  BCC check_left
   DEC gamekid_ram+gi_var::enemy_x, X
   LDA gamekid_ram+gi_var::enemy_y, X
   CLC
-  ADC #$08
+  ADC #$10
   STA gamekid_ram+gi_var::enemy_y, X
   LDA #$FF
   STA gamekid_ram+gi_var::enemy_direction, X
   JMP next_move
 check_left:
-  CMP #$31
-  BNE next_move
+  LDA #$31
+  CMP gamekid_ram+gi_var::enemy_x, X
+  BCC next_move
   INC gamekid_ram+gi_var::enemy_x, X
   LDA gamekid_ram+gi_var::enemy_y, X
   CLC
-  ADC #$08
+  ADC #$10
   STA gamekid_ram+gi_var::enemy_y, X
   LDA #$01
   STA gamekid_ram+gi_var::enemy_direction, X
