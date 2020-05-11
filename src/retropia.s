@@ -1015,7 +1015,7 @@ wait_for_level:
   LDA #$00
   STA gamekid_ram+gi_var::bullet_y
   STA gamekid_ram+gi_var::num_enemies
-  
+
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR gi_partial_draw_level
@@ -1184,7 +1184,7 @@ collision_loop:
   ADC #$08
   CMP gamekid_ram+gi_var::enemy_x, X
   BCC next_collision_iteration
-  
+
   LDA gamekid_ram+gi_var::enemy_x, X
   CLC
   ADC #$08
@@ -1193,7 +1193,7 @@ collision_loop:
 
   ; reduce player lives
   JSR gi_lose_life
-  
+
   JMP delete_enemy
 
 check_bullet_collision:
@@ -1208,7 +1208,7 @@ check_bullet_collision:
   ADC #$04
   CMP gamekid_ram+gi_var::enemy_x, X
   BCC next_collision_iteration
-  
+
   LDA gamekid_ram+gi_var::enemy_x, X
   CLC
   ADC #$0C
@@ -1225,7 +1225,7 @@ check_bullet_collision:
   ADC #$04
   CMP gamekid_ram+gi_var::enemy_y, X
   BCC next_collision_iteration
-  
+
   LDA gamekid_ram+gi_var::enemy_y, X
   CLC
   ADC #$04
@@ -1325,7 +1325,7 @@ return:
   STA gamekid_ram+gi_var::bullet_x
 :
 
-  ; update bullet 
+  ; update bullet
   LDA gamekid_ram+gi_var::bullet_y
   BEQ :++
   CMP #$30
@@ -1490,7 +1490,7 @@ skip_draw_loop:
   LDA gamekid_ram+gi_var::num_enemies
   ADC gamekid_ram+gi_var::total_enemies
   BNE :+
-  
+
   LDA #game_states::gi_win
   STA game_state
 
@@ -1527,7 +1527,7 @@ skip_draw_loop:
   INX
   .endrepeat
   BNE :-
-  
+
   ; back to title
   LDA #$00
   STA frame_counter
