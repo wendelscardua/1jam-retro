@@ -1638,6 +1638,7 @@ wk_player_sprite = metasprite_1_data
 gi_player_sprite = metasprite_2_data
 gi_bullet_sprite = metasprite_3_data
 gi_enemy_sprite = metasprite_4_data
+mf_cursor_sprite = metasprite_5_data
 
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
