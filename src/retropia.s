@@ -32,7 +32,6 @@ FT_DPCM_OFF= $c000
 
 GAMEKID_DELAY = 60
 
-
 .segment "ZEROPAGE"
 FT_TEMP: .res 3
 .segment "FAMITONE"
@@ -70,6 +69,12 @@ oam_sprites:
   gi_playing
   gi_win
   gi_lose
+  ; mf = mine finder (minesweeper clone)
+  mf_booting_gamekid
+  mf_title
+  mf_playing
+  mf_win
+  mf_lose
 .endenum
 
 .importzp rng_seed
@@ -1538,6 +1543,31 @@ return:
   RTS
 .endproc
 
+.proc mf_booting_gamekid
+  KIL
+  RTS
+.endproc
+
+.proc mf_title
+  KIL
+  RTS
+.endproc
+
+.proc mf_playing
+  KIL
+  RTS
+.endproc
+
+.proc mf_win
+  KIL
+  RTS
+.endproc
+
+.proc mf_lose
+  KIL
+  RTS
+.endproc
+
 .proc gamekid_xy_to_coordinates
   ; input: A = gamekid xy coordinates (high nibble y, low nibble x)
   ; output: temp_x and temp_y = screen xy coordinates
@@ -1612,6 +1642,11 @@ game_state_handlers_l:
   .byte <(gi_playing-1)
   .byte <(gi_win-1)
   .byte <(gi_lose-1)
+  .byte <(mf_booting_gamekid-1)
+  .byte <(mf_title-1)
+  .byte <(mf_playing-1)
+  .byte <(mf_win-1)
+  .byte <(mf_lose-1)
 
 game_state_handlers_h:
   .byte >(main_playing-1)
@@ -1625,6 +1660,11 @@ game_state_handlers_h:
   .byte >(gi_playing-1)
   .byte >(gi_win-1)
   .byte >(gi_lose-1)
+  .byte >(mf_booting_gamekid-1)
+  .byte >(mf_title-1)
+  .byte >(mf_playing-1)
+  .byte >(mf_win-1)
+  .byte >(mf_lose-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
@@ -1704,20 +1744,24 @@ nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
 nametable_wk_title: .incbin "../assets/wk-level/title.rle"
 nametable_gi_title: .incbin "../assets/gi-level/title.rle"
+nametable_mf_title: .incbin "../assets/mf-level/title.rle"
 
 subgame_by_game_state:
         .byte $00 ; main
         .byte $01, $01, $01, $01, $01 ; WK
-        .byte $02, $02, $02, $02 ; GI
+        .byte $02, $02, $02, $02, $02 ; GI
+        .byte $03, $03, $03, $03, $03 ; MF
 
 subgame_nametables_l:
         .byte $00
         .byte <nametable_wk_title
         .byte <nametable_gi_title
+        .byte <nametable_mf_title
 subgame_nametables_h:
         .byte $00
         .byte >nametable_wk_title
         .byte >nametable_gi_title
+        .byte >nametable_mf_title
 
 ; music and sfx data
 ;.include "../assets/music/some-music.s"
