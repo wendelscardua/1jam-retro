@@ -130,11 +130,11 @@ MF_BOMBS=8
 .struct mf_var
   player_x .byte ; table coordinates (0..7)
   player_y .byte ; idem
+  ready .byte
   unflagged_bombs .byte
   table .res 64
   bomb_table .res 64
   status .res 64
-  ready .byte
 .endstruct
 
 .enum mf_cell_status
@@ -1702,10 +1702,7 @@ next:
   RTS
 .endproc
 
-.proc mf_open_cell
-  LDA gamekid_ram+mf_var::ready
-  BNE open_cell
-  INC gamekid_ram+mf_var::ready
+.proc mf_randomize_board
   ; randomize board
   LDA #MF_BOMBS
   STA gamekid_ram+mf_var::unflagged_bombs
@@ -1714,54 +1711,219 @@ next:
 :
   STA gamekid_ram+mf_var::table,X
   STA gamekid_ram+mf_var::bomb_table,X
+  STA gamekid_ram+mf_var::status,X
   DEX
   BPL :-
 
   LDY #MF_BOMBS
 new_bomb_loop:
+  TYA
+  PHA
   JSR rand
+  PLA
+  TAY
   LDA rng_seed
-  AND #63
+  AND #%111111
+  CMP temp_a
+  BEQ new_bomb_loop
   TAX
   LDA gamekid_ram+mf_var::bomb_table,X
   BNE new_bomb_loop
   INC gamekid_ram+mf_var::bomb_table,X
 
-  CPX #9
-  BCC :+
+  TXA
+  AND #%111
+  STA temp_x
+  TXA
+  LSR
+  LSR
+  LSR
+  AND #%111
+  STA temp_y
+
+  LDA temp_y
+  BEQ skip_previous_row
+
+  LDA temp_x
+  BEQ :+
   INC gamekid_ram+mf_var::table-9,X
 :
-  CPX #8
-  BCC :+
   INC gamekid_ram+mf_var::table-8,X
-:
-  CPX #7
-  BCC :+
+
+  CMP #7
+  BEQ :+
   INC gamekid_ram+mf_var::table-7,X
 :
-  CPX #1
-  BCC :+
+
+skip_previous_row:
+  LDA temp_x
+  BEQ :+
   INC gamekid_ram+mf_var::table-1,X
 :
-  CPX #55
-  BCS :+
-  INC gamekid_ram+mf_var::table+9,X
-:
-  CPX #56
-  BCS :+
-  INC gamekid_ram+mf_var::table+8,X
-:
-  CPX #57
-  BCS :+
-  INC gamekid_ram+mf_var::table+7,X
-:
-  CPX #63
-  BCS :+
+  CMP #7
+  BEQ :+
   INC gamekid_ram+mf_var::table+1,X
 :
+
+  LDA temp_y
+  CMP #7
+  BEQ skip_next_row
+
+  LDA temp_x
+  BEQ :+
+  INC gamekid_ram+mf_var::table+7,X
+:
+  INC gamekid_ram+mf_var::table+8,X
+
+  CMP #7
+  BEQ :+
+  INC gamekid_ram+mf_var::table+9,X
+:
+
+skip_next_row:
   DEY
   BNE new_bomb_loop
+  RTS
+.endproc
+
+.proc mf_open_cell
+  LDA gamekid_ram+mf_var::player_y
+  .repeat 3
+  ASL
+  .endrepeat
+  CLC
+  ADC gamekid_ram+mf_var::player_x
+  STA temp_a
+
+  LDA gamekid_ram+mf_var::ready
+  BNE open_cell
+  INC gamekid_ram+mf_var::ready
+:
+  JSR mf_randomize_board
+  LDX #63
+:
+  LDA gamekid_ram+mf_var::table,X
+  CMP #5
+  BCS :--
+  DEX
+  BPL :-
+
 open_cell:
+  LDX temp_a
+  LDA gamekid_ram+mf_var::status,X
+  BEQ is_closed
+  RTS
+is_closed:
+  LDA #mf_cell_status::opened
+  STA gamekid_ram+mf_var::status,X
+  LDA gamekid_ram+mf_var::bomb_table,X
+  BEQ safe
+bomb:
+  KIL ; TODO game over
+safe:
+  ; draw new megatile
+
+  LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+  CLC
+  TXA
+  AND #%100
+  BEQ :+
+  LDA #$8
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  TXA
+  AND #%010
+  BEQ :+
+  LDA #$4
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  TXA
+  AND #%001
+  BEQ :+
+  LDA #$2
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  LDA #$E8
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%100000
+  BEQ :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%010000
+  BEQ :+
+  LDA #$80
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%001000
+  BEQ :+
+  LDA #$40
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+vblankwait:       ; wait for another vblank before continuing
+  BIT PPUSTATUS
+  BPL vblankwait
+
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+  LDA gamekid_ram+mf_var::table,X
+  .repeat 2
+  ASL
+  .endrepeat
+  TAY
+  LDA mf_tiles_per_number,Y
+  STA PPUDATA
+  INY
+  LDA mf_tiles_per_number,Y
+  STA PPUDATA
+  INY
+  CLC
+  LDA #$20
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+  LDA mf_tiles_per_number,Y
+  STA PPUDATA
+  INY
+  LDA mf_tiles_per_number,Y
+  STA PPUDATA
+  INY
+
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
   RTS
 .endproc
 
@@ -1847,7 +2009,7 @@ open_cell:
   ADC #$38
   STA temp_y
   JSR display_metasprite
-  
+
   ; TODO check win
 
   RTS
@@ -2034,6 +2196,17 @@ wk_level_3_data:
         .byte "---#   @    #---"
         .byte "---#       x#---"
         .byte "---##########---"
+
+mf_tiles_per_number:
+        .byte $E0, $E1, $F0, $F1 ; 0
+        .byte $C4, $C5, $D4, $D5 ; 1
+        .byte $C6, $C7, $D6, $D7 ; 2
+        .byte $E4, $E5, $F4, $F5 ; 1
+        .byte $E6, $E7, $F6, $F7 ; 2
+mf_flag_tiles:
+        .byte $CC, $CD, $DC, $DD
+mf_bomb_tiles:
+        .byte $CE, $CF, $DE, $DF
 
 nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
