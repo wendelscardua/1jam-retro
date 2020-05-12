@@ -269,8 +269,8 @@ vblankwait:       ; wait for another vblank before continuing
   ; LDA #1
   ; JSR FamiToneSfxInit
 
-  ; LDA #game_states::wk_booting_gamekid
-  LDA #game_states::gi_booting_gamekid
+  ; TODO: change to real game initial state when available
+  LDA #game_states::mf_booting_gamekid
   STA game_state
   LDA #$00
   STA frame_counter
@@ -1544,12 +1544,140 @@ return:
 .endproc
 
 .proc mf_booting_gamekid
-  KIL
+  JSR gk_booting_gamekid
   RTS
 .endproc
 
 .proc mf_title
-  KIL
+  LDA frame_counter
+  BNE wait_for_level
+
+  ; insta scroll to title
+  LDA #$01
+  STA current_nametable
+
+wait_for_level:
+  ; TODO: optimize
+  INC frame_counter
+  LDA #GAMEKID_DELAY ; wait a second
+  CMP frame_counter
+  BNE :+
+  LDA #$00
+  STA current_nametable
+
+  ; mf setup
+  LDA #game_states::mf_playing
+  STA game_state
+
+:
+  ; use the wait to draw the level bg, row by row (gotta go fast)
+  JSR mf_partial_draw_level
+  RTS
+.endproc
+
+.proc mf_partial_draw_level
+  LDA frame_counter
+  CMP #$06
+  BCS :+
+  RTS
+:
+  CMP #$18
+  BCC :+
+  RTS
+:
+
+  TAY
+  LDA current_nametable
+  EOR #%1
+  ASL
+  ASL
+  ORA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+
+  ; adding y*$20 to ppu_addr_ptr
+  ; 76543210         76543210 76543210
+  ; 000edcba x $20 = 000000ed cba00000
+
+  ; ed
+  TYA
+  .repeat 3
+  LSR
+  .endrepeat
+  CLC
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+
+  ; cba
+  TYA
+  .repeat 5
+  ASL
+  .endrepeat
+  CLC
+  ADC #$06 ; X offset
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+  LDA PPUSTATUS
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+
+  LDX #$08
+row_loop:
+  LDA frame_counter
+  CMP #$06
+  BEQ margin
+  CMP #$17
+  BEQ margin
+  AND #%1
+  BEQ even_row
+
+odd_row:
+  LDA #$E2
+  STA PPUDATA
+  LDA #$E3
+  STA PPUDATA
+  JMP next
+even_row:
+  LDA #$F2
+  STA PPUDATA
+  LDA #$F3
+  STA PPUDATA
+  JMP next
+
+margin:
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+next:
+  DEX
+  BNE row_loop
+
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  LDA #$00 ; horizontal scroll
+  STA PPUSCROLL
+  STA PPUSCROLL
+
   RTS
 .endproc
 
