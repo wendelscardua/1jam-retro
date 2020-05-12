@@ -126,6 +126,21 @@ GI_TOTAL_ENEMIES=30
   bullet_y .byte
 .endstruct
 
+MF_BOMBS=8
+.struct mf_var
+  player_x .byte ; table coordinates (0..7)
+  player_y .byte ; idem
+  flagged_bombs .byte
+  table .res 64
+  status .res 64
+.endstruct
+
+.enum mf_cell_status
+  closed = 0
+  flagged
+  opened
+.endenum
+
 .segment "CODE"
 
 .import reset_handler
