@@ -1583,7 +1583,9 @@ wait_for_level:
   ; mf setup
   LDA #game_states::mf_playing
   STA game_state
-
+  LDA #$03
+  STA gamekid_ram+mf_var::player_x
+  STA gamekid_ram+mf_var::player_y
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR mf_partial_draw_level
@@ -1697,7 +1699,80 @@ next:
 .endproc
 
 .proc mf_playing
-  KIL
+  JSR readjoy
+  LDA pressed_buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_x
+  SEC
+  SBC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_x
+:
+  LDA pressed_buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_x
+  CLC
+  ADC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_x
+:
+  LDA pressed_buttons
+  AND #BUTTON_UP
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_y
+  SEC
+  SBC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_y
+:
+  LDA pressed_buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_y
+  CLC
+  ADC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_y
+:
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  KIL ; TODO open cell
+:
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+  LDA #<mf_cursor_sprite
+  STA addr_ptr
+  LDA #>mf_cursor_sprite
+  STA addr_ptr+1
+  LDA gamekid_ram+mf_var::player_x
+  ; X = x * $10 + $40
+  .repeat 4
+  ASL
+  .endrepeat
+  CLC
+  ADC #$40
+  STA temp_x
+  LDA gamekid_ram+mf_var::player_y
+  ; Y = y * $10 + $38
+  .repeat 4
+  ASL
+  .endrepeat
+  CLC
+  ADC #$38
+  STA temp_y
+  JSR display_metasprite
+  
+  ; TODO check win
+
   RTS
 .endproc
 
