@@ -130,9 +130,11 @@ MF_BOMBS=8
 .struct mf_var
   player_x .byte ; table coordinates (0..7)
   player_y .byte ; idem
-  flagged_bombs .byte
+  unflagged_bombs .byte
   table .res 64
+  bomb_table .res 64
   status .res 64
+  ready .byte
 .endstruct
 
 .enum mf_cell_status
@@ -1586,6 +1588,8 @@ wait_for_level:
   LDA #$03
   STA gamekid_ram+mf_var::player_x
   STA gamekid_ram+mf_var::player_y
+  LDA #$00
+  STA gamekid_ram+mf_var::ready
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR mf_partial_draw_level
@@ -1698,6 +1702,74 @@ next:
   RTS
 .endproc
 
+.proc mf_open_cell
+  LDA gamekid_ram+mf_var::ready
+  BNE open_cell
+  INC gamekid_ram+mf_var::ready
+  ; randomize board
+  LDA #MF_BOMBS
+  STA gamekid_ram+mf_var::unflagged_bombs
+  LDA #$00
+  LDX #63
+:
+  STA gamekid_ram+mf_var::table,X
+  STA gamekid_ram+mf_var::bomb_table,X
+  DEX
+  BPL :-
+
+  LDY #MF_BOMBS
+new_bomb_loop:
+  JSR rand
+  LDA rng_seed
+  AND #63
+  TAX
+  LDA gamekid_ram+mf_var::bomb_table,X
+  BNE new_bomb_loop
+  INC gamekid_ram+mf_var::bomb_table,X
+
+  CPX #9
+  BCC :+
+  INC gamekid_ram+mf_var::table-9,X
+:
+  CPX #8
+  BCC :+
+  INC gamekid_ram+mf_var::table-8,X
+:
+  CPX #7
+  BCC :+
+  INC gamekid_ram+mf_var::table-7,X
+:
+  CPX #1
+  BCC :+
+  INC gamekid_ram+mf_var::table-1,X
+:
+  CPX #55
+  BCS :+
+  INC gamekid_ram+mf_var::table+9,X
+:
+  CPX #56
+  BCS :+
+  INC gamekid_ram+mf_var::table+8,X
+:
+  CPX #57
+  BCS :+
+  INC gamekid_ram+mf_var::table+7,X
+:
+  CPX #63
+  BCS :+
+  INC gamekid_ram+mf_var::table+1,X
+:
+  DEY
+  BNE new_bomb_loop
+open_cell:
+  RTS
+.endproc
+
+.proc mf_toggle_flag
+  KIL ; TODO implement
+  RTS
+.endproc
+
 .proc mf_playing
   JSR readjoy
   LDA pressed_buttons
@@ -1743,7 +1815,12 @@ next:
   LDA pressed_buttons
   AND #BUTTON_A
   BEQ :+
-  KIL ; TODO open cell
+  JSR mf_open_cell
+:
+  LDA pressed_buttons
+  AND #BUTTON_B
+  BEQ :+
+  JSR mf_toggle_flag
 :
 
   ; draw elements
