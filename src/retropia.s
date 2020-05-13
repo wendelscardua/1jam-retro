@@ -1831,7 +1831,22 @@ is_closed:
   LDA gamekid_ram+mf_var::bomb_table,X
   BEQ safe
 bomb:
-  KIL ; TODO game over
+  LDY #mf_tile_indices::bomb
+  JSR mf_draw_tile
+  LDA #game_states::mf_lose
+  STA game_state
+
+  LDA #$21
+  STA ppu_addr_ptr+1
+  LDA #$CC
+  STA ppu_addr_ptr
+  print string_game_over
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA frame_counter
+  RTS
 safe:
   INC gamekid_ram+mf_var::opened_cells
   ; draw new megatile
@@ -2104,7 +2119,7 @@ draw_cursor:
   ; back to title
   LDA #$00
   STA frame_counter
-  LDA #game_states::gi_title
+  LDA #game_states::mf_title
   STA game_state
 
 return:
