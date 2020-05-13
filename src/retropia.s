@@ -1787,6 +1787,7 @@ skip_next_row:
 .endproc
 
 .proc mf_open_cell
+  ; convert 8x8 coordinate to array index in temp_a
   LDA gamekid_ram+mf_var::player_y
   .repeat 3
   ASL
@@ -1928,7 +1929,143 @@ vblankwait:       ; wait for another vblank before continuing
 .endproc
 
 .proc mf_toggle_flag
-  KIL ; TODO implement
+  ; convert 8x8 coordinate to array index in X
+  LDA gamekid_ram+mf_var::player_y
+  .repeat 3
+  ASL
+  .endrepeat
+  CLC
+  ADC gamekid_ram+mf_var::player_x
+  TAX
+
+  LDA gamekid_ram+mf_var::status,X
+  BEQ is_closed
+  CMP #mf_cell_status::flagged
+  BEQ is_flagged
+is_opened:
+  ; can't flag opened cells
+  RTS
+is_flagged:
+  LDA #mf_cell_status::closed
+  STA gamekid_ram+mf_var::status,X
+  ; if cell has bomb, decrease unflagged bombs
+  LDA gamekid_ram+mf_var::bomb_table,X
+  BEQ :+
+  DEC gamekid_ram+mf_var::unflagged_bombs
+:
+  LDY #4 ; closed_tiles start at mf_flag_tiles + 4
+  JMP draw_tile
+is_closed:
+  LDA #mf_cell_status::flagged
+  STA gamekid_ram+mf_var::status,X
+
+  ; if cell had bomb, increase unflagged bombs
+  LDA gamekid_ram+mf_var::bomb_table,X
+  BEQ :+
+  INC gamekid_ram+mf_var::unflagged_bombs
+:
+
+  LDY #0 ; mf_flag_tiles + 0
+  ; JMP draw_tile
+draw_tile:
+
+  LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+  CLC
+  TXA
+  AND #%100
+  BEQ :+
+  LDA #$8
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  TXA
+  AND #%010
+  BEQ :+
+  LDA #$4
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  TXA
+  AND #%001
+  BEQ :+
+  LDA #$2
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  LDA #$E8
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%100000
+  BEQ :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%010000
+  BEQ :+
+  LDA #$80
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%001000
+  BEQ :+
+  LDA #$40
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+vblankwait:       ; wait for another vblank before continuing
+  BIT PPUSTATUS
+  BPL vblankwait
+
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  LDA mf_flag_tiles,Y
+  STA PPUDATA
+  INY
+  LDA mf_flag_tiles,Y
+  STA PPUDATA
+  INY
+  CLC
+  LDA #$20
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+  LDA mf_flag_tiles,Y
+  STA PPUDATA
+  INY
+  LDA mf_flag_tiles,Y
+  STA PPUDATA
+  INY
+
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
   RTS
 .endproc
 
@@ -2201,10 +2338,12 @@ mf_tiles_per_number:
         .byte $E0, $E1, $F0, $F1 ; 0
         .byte $C4, $C5, $D4, $D5 ; 1
         .byte $C6, $C7, $D6, $D7 ; 2
-        .byte $E4, $E5, $F4, $F5 ; 1
-        .byte $E6, $E7, $F6, $F7 ; 2
+        .byte $E4, $E5, $F4, $F5 ; 3
+        .byte $E6, $E7, $F6, $F7 ; 4     
 mf_flag_tiles:
         .byte $CC, $CD, $DC, $DD
+mf_closed_tiles:
+        .byte $E2, $E3, $F2, $F3
 mf_bomb_tiles:
         .byte $CE, $CF, $DE, $DF
 
