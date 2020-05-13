@@ -32,7 +32,6 @@ FT_DPCM_OFF= $c000
 
 GAMEKID_DELAY = 60
 
-
 .segment "ZEROPAGE"
 FT_TEMP: .res 3
 .segment "FAMITONE"
@@ -70,6 +69,12 @@ oam_sprites:
   gi_playing
   gi_win
   gi_lose
+  ; mf = mine finder (minesweeper clone)
+  mf_booting_gamekid
+  mf_title
+  mf_playing
+  mf_win
+  mf_lose
 .endenum
 
 .importzp rng_seed
@@ -120,6 +125,34 @@ GI_TOTAL_ENEMIES=30
   bullet_x .byte
   bullet_y .byte
 .endstruct
+
+MF_BOMBS=8
+.struct mf_var
+  player_x .byte ; table coordinates (0..7)
+  player_y .byte ; idem
+  ready .byte
+  opened_cells .byte
+  table .res 64
+  bomb_table .res 64
+  status .res 64
+.endstruct
+
+.enum mf_tile_indices
+  number_0 = 0
+  number_1 = 4
+  number_2 = 8
+  number_3 = 12
+  number_4 = 16
+  flag = 20
+  closed = 24
+  bomb = 28
+.endenum
+
+.enum mf_cell_status
+  closed = 0
+  flagged
+  opened
+.endenum
 
 .segment "CODE"
 
@@ -264,8 +297,8 @@ vblankwait:       ; wait for another vblank before continuing
   ; LDA #1
   ; JSR FamiToneSfxInit
 
-  ; LDA #game_states::wk_booting_gamekid
-  LDA #game_states::gi_booting_gamekid
+  ; TODO: change to real game initial state when available
+  LDA #game_states::mf_booting_gamekid
   STA game_state
   LDA #$00
   STA frame_counter
@@ -1538,6 +1571,561 @@ return:
   RTS
 .endproc
 
+.proc mf_booting_gamekid
+  JSR gk_booting_gamekid
+  RTS
+.endproc
+
+.proc mf_title
+  LDA frame_counter
+  BNE wait_for_level
+
+  ; insta scroll to title
+  LDA #$01
+  STA current_nametable
+
+wait_for_level:
+  ; TODO: optimize
+  INC frame_counter
+  LDA #GAMEKID_DELAY ; wait a second
+  CMP frame_counter
+  BNE :+
+  LDA #$00
+  STA current_nametable
+
+  ; mf setup
+  LDA #game_states::mf_playing
+  STA game_state
+  LDA #$03
+  STA gamekid_ram+mf_var::player_x
+  STA gamekid_ram+mf_var::player_y
+  LDA #$00
+  STA gamekid_ram+mf_var::ready
+:
+  ; use the wait to draw the level bg, row by row (gotta go fast)
+  JSR mf_partial_draw_level
+  RTS
+.endproc
+
+.proc mf_partial_draw_level
+  LDA frame_counter
+  CMP #$06
+  BCS :+
+  RTS
+:
+  CMP #$18
+  BCC :+
+  RTS
+:
+
+  TAY
+  LDA current_nametable
+  EOR #%1
+  ASL
+  ASL
+  ORA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+
+  ; adding y*$20 to ppu_addr_ptr
+  ; 76543210         76543210 76543210
+  ; 000edcba x $20 = 000000ed cba00000
+
+  ; ed
+  TYA
+  .repeat 3
+  LSR
+  .endrepeat
+  CLC
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+
+  ; cba
+  TYA
+  .repeat 5
+  ASL
+  .endrepeat
+  CLC
+  ADC #$06 ; X offset
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+  LDA PPUSTATUS
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+
+  LDX #$08
+row_loop:
+  LDA frame_counter
+  CMP #$06
+  BEQ margin
+  CMP #$17
+  BEQ margin
+  AND #%1
+  BEQ even_row
+
+odd_row:
+  LDA #$E2
+  STA PPUDATA
+  LDA #$E3
+  STA PPUDATA
+  JMP next
+even_row:
+  LDA #$F2
+  STA PPUDATA
+  LDA #$F3
+  STA PPUDATA
+  JMP next
+
+margin:
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+next:
+  DEX
+  BNE row_loop
+
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  LDA #$00 ; horizontal scroll
+  STA PPUSCROLL
+  STA PPUSCROLL
+
+  RTS
+.endproc
+
+.proc mf_randomize_board
+  ; randomize board
+  LDA #0
+  STA gamekid_ram+mf_var::opened_cells
+  LDA #$00
+  LDX #63
+:
+  STA gamekid_ram+mf_var::table,X
+  STA gamekid_ram+mf_var::bomb_table,X
+  STA gamekid_ram+mf_var::status,X
+  DEX
+  BPL :-
+
+  LDY #MF_BOMBS
+new_bomb_loop:
+  TYA
+  PHA
+  JSR rand
+  PLA
+  TAY
+  LDA rng_seed
+  AND #%111111
+  CMP temp_a
+  BEQ new_bomb_loop
+  TAX
+  LDA gamekid_ram+mf_var::bomb_table,X
+  BNE new_bomb_loop
+  INC gamekid_ram+mf_var::bomb_table,X
+
+  TXA
+  AND #%111
+  STA temp_x
+  TXA
+  LSR
+  LSR
+  LSR
+  AND #%111
+  STA temp_y
+
+  LDA temp_y
+  BEQ skip_previous_row
+
+  LDA temp_x
+  BEQ :+
+  INC gamekid_ram+mf_var::table-9,X
+:
+  INC gamekid_ram+mf_var::table-8,X
+
+  CMP #7
+  BEQ :+
+  INC gamekid_ram+mf_var::table-7,X
+:
+
+skip_previous_row:
+  LDA temp_x
+  BEQ :+
+  INC gamekid_ram+mf_var::table-1,X
+:
+  CMP #7
+  BEQ :+
+  INC gamekid_ram+mf_var::table+1,X
+:
+
+  LDA temp_y
+  CMP #7
+  BEQ skip_next_row
+
+  LDA temp_x
+  BEQ :+
+  INC gamekid_ram+mf_var::table+7,X
+:
+  INC gamekid_ram+mf_var::table+8,X
+
+  CMP #7
+  BEQ :+
+  INC gamekid_ram+mf_var::table+9,X
+:
+
+skip_next_row:
+  DEY
+  BNE new_bomb_loop
+  RTS
+.endproc
+
+.proc mf_open_cell
+  ; convert 8x8 coordinate to array index in temp_a
+  LDA gamekid_ram+mf_var::player_y
+  .repeat 3
+  ASL
+  .endrepeat
+  CLC
+  ADC gamekid_ram+mf_var::player_x
+  STA temp_a
+
+  LDA gamekid_ram+mf_var::ready
+  BNE open_cell
+  INC gamekid_ram+mf_var::ready
+:
+  JSR mf_randomize_board
+  LDX #63
+:
+  LDA gamekid_ram+mf_var::table,X
+  CMP #5
+  BCS :--
+  DEX
+  BPL :-
+
+open_cell:
+  LDX temp_a
+  LDA gamekid_ram+mf_var::status,X
+  BEQ is_closed
+  RTS
+is_closed:
+  LDA #mf_cell_status::opened
+  STA gamekid_ram+mf_var::status,X
+  LDA gamekid_ram+mf_var::bomb_table,X
+  BEQ safe
+bomb:
+  LDY #mf_tile_indices::bomb
+  JSR mf_draw_tile
+  LDA #game_states::mf_lose
+  STA game_state
+
+  LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$CB
+  STA ppu_addr_ptr
+  print string_game_over
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA frame_counter
+  RTS
+safe:
+  INC gamekid_ram+mf_var::opened_cells
+  ; draw new megatile
+
+  LDA gamekid_ram+mf_var::table,X
+  .repeat 2
+  ASL
+  .endrepeat
+  TAY
+  JSR mf_draw_tile
+  RTS
+.endproc
+
+.proc mf_toggle_flag
+  ; convert 8x8 coordinate to array index in X
+  LDA gamekid_ram+mf_var::player_y
+  .repeat 3
+  ASL
+  .endrepeat
+  CLC
+  ADC gamekid_ram+mf_var::player_x
+  TAX
+
+  LDA gamekid_ram+mf_var::status,X
+  BEQ is_closed
+  CMP #mf_cell_status::flagged
+  BEQ is_flagged
+is_opened:
+  ; can't flag opened cells
+  RTS
+is_flagged:
+  LDA #mf_cell_status::closed
+  STA gamekid_ram+mf_var::status,X
+  LDY #mf_tile_indices::closed
+  JMP draw_tile
+is_closed:
+  LDA #mf_cell_status::flagged
+  STA gamekid_ram+mf_var::status,X
+  LDY #mf_tile_indices::flag
+  ; JMP draw_tile
+draw_tile:
+  JSR mf_draw_tile
+  RTS
+.endproc
+
+.proc mf_draw_tile
+  ; displays a tile (indexed by Y)
+  ; at position X (X = 0yyy0xxx)
+    LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+  CLC
+  TXA
+  AND #%100
+  BEQ :+
+  LDA #$8
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  TXA
+  AND #%010
+  BEQ :+
+  LDA #$4
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  TXA
+  AND #%001
+  BEQ :+
+  LDA #$2
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+:
+  LDA #$E8
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%100000
+  BEQ :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%010000
+  BEQ :+
+  LDA #$80
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  TXA
+  AND #%001000
+  BEQ :+
+  LDA #$40
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+vblankwait:       ; wait for another vblank before continuing
+  BIT PPUSTATUS
+  BPL vblankwait
+
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  LDA mf_tiles,Y
+  STA PPUDATA
+  INY
+  LDA mf_tiles,Y
+  STA PPUDATA
+  INY
+  CLC
+  LDA #$20
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+  LDA mf_tiles,Y
+  STA PPUDATA
+  INY
+  LDA mf_tiles,Y
+  STA PPUDATA
+  INY
+
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
+  RTS
+.endproc
+
+.proc mf_playing
+  JSR readjoy
+  LDA pressed_buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_x
+  SEC
+  SBC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_x
+:
+  LDA pressed_buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_x
+  CLC
+  ADC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_x
+:
+  LDA pressed_buttons
+  AND #BUTTON_UP
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_y
+  SEC
+  SBC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_y
+:
+  LDA pressed_buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+
+  LDA gamekid_ram+mf_var::player_y
+  CLC
+  ADC #$01
+  AND #%111
+  STA gamekid_ram+mf_var::player_y
+:
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  JSR mf_open_cell
+:
+  LDA pressed_buttons
+  AND #BUTTON_B
+  BEQ :+
+  JSR mf_toggle_flag
+:
+
+  ; check win
+  LDA gamekid_ram+mf_var::opened_cells
+  CMP #(.sizeof(mf_var::table) - MF_BOMBS)
+  BNE :+
+  LDA #game_states::mf_win
+  STA game_state
+:
+
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+  LDA #<mf_cursor_sprite
+  STA addr_ptr
+  LDA #>mf_cursor_sprite
+  STA addr_ptr+1
+
+  ; if game ended, hide cursor, else compute actual position
+  LDA game_state
+  CMP #game_states::mf_playing
+  BEQ draw_cursor
+hide_cursor:
+  LDA #$F0
+  STA temp_y
+  JSR display_metasprite
+  RTS
+draw_cursor:
+  LDA gamekid_ram+mf_var::player_x
+  ; X = x * $10 + $40
+  .repeat 4
+  ASL
+  .endrepeat
+  CLC
+  ADC #$40
+  STA temp_x
+  LDA gamekid_ram+mf_var::player_y
+  ; Y = y * $10 + $38
+  .repeat 4
+  ASL
+  .endrepeat
+  CLC
+  ADC #$38
+  STA temp_y
+  JSR display_metasprite
+
+  RTS
+.endproc
+
+.proc mf_win
+  LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$CC
+  STA ppu_addr_ptr
+  print string_you_win
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  KIL ; TODO - return to main game (with bomb)
+  RTS
+.endproc
+
+.proc mf_lose
+  INC frame_counter
+  LDA frame_counter
+  CMP #GAMEKID_DELAY
+  BNE return
+
+  ; back to title
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::mf_title
+  STA game_state
+
+return:
+  RTS
+.endproc
+
 .proc gamekid_xy_to_coordinates
   ; input: A = gamekid xy coordinates (high nibble y, low nibble x)
   ; output: temp_x and temp_y = screen xy coordinates
@@ -1612,6 +2200,11 @@ game_state_handlers_l:
   .byte <(gi_playing-1)
   .byte <(gi_win-1)
   .byte <(gi_lose-1)
+  .byte <(mf_booting_gamekid-1)
+  .byte <(mf_title-1)
+  .byte <(mf_playing-1)
+  .byte <(mf_win-1)
+  .byte <(mf_lose-1)
 
 game_state_handlers_h:
   .byte >(main_playing-1)
@@ -1625,6 +2218,11 @@ game_state_handlers_h:
   .byte >(gi_playing-1)
   .byte >(gi_win-1)
   .byte >(gi_lose-1)
+  .byte >(mf_booting_gamekid-1)
+  .byte >(mf_title-1)
+  .byte >(mf_playing-1)
+  .byte >(mf_win-1)
+  .byte >(mf_lose-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
@@ -1638,6 +2236,7 @@ wk_player_sprite = metasprite_1_data
 gi_player_sprite = metasprite_2_data
 gi_bullet_sprite = metasprite_3_data
 gi_enemy_sprite = metasprite_4_data
+mf_cursor_sprite = metasprite_5_data
 
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
@@ -1699,24 +2298,38 @@ wk_level_3_data:
         .byte "---#       x#---"
         .byte "---##########---"
 
+mf_tiles:
+        .byte $E0, $E1, $F0, $F1 ; 0
+        .byte $C4, $C5, $D4, $D5 ; 1
+        .byte $C6, $C7, $D6, $D7 ; 2
+        .byte $E4, $E5, $F4, $F5 ; 3
+        .byte $E6, $E7, $F6, $F7 ; 4     
+        .byte $CC, $CD, $DC, $DD ; flag
+        .byte $E2, $E3, $F2, $F3 ; closed
+        .byte $CE, $CF, $DE, $DF ; bomb
+
 nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
 nametable_wk_title: .incbin "../assets/wk-level/title.rle"
 nametable_gi_title: .incbin "../assets/gi-level/title.rle"
+nametable_mf_title: .incbin "../assets/mf-level/title.rle"
 
 subgame_by_game_state:
         .byte $00 ; main
         .byte $01, $01, $01, $01, $01 ; WK
-        .byte $02, $02, $02, $02 ; GI
+        .byte $02, $02, $02, $02, $02 ; GI
+        .byte $03, $03, $03, $03, $03 ; MF
 
 subgame_nametables_l:
         .byte $00
         .byte <nametable_wk_title
         .byte <nametable_gi_title
+        .byte <nametable_mf_title
 subgame_nametables_h:
         .byte $00
         .byte >nametable_wk_title
         .byte >nametable_gi_title
+        .byte >nametable_mf_title
 
 ; music and sfx data
 ;.include "../assets/music/some-music.s"
