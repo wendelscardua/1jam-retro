@@ -1836,9 +1836,9 @@ bomb:
   LDA #game_states::mf_lose
   STA game_state
 
-  LDA #$21
+  LDA #$20
   STA ppu_addr_ptr+1
-  LDA #$CC
+  LDA #$CB
   STA ppu_addr_ptr
   print string_game_over
   LDA #$20
@@ -2071,7 +2071,7 @@ vblankwait:       ; wait for another vblank before continuing
   BEQ draw_cursor
 hide_cursor:
   LDA #$F0
-  STA gamekid_ram+mf_var::player_y
+  STA temp_y
   JSR display_metasprite
   RTS
 draw_cursor:
