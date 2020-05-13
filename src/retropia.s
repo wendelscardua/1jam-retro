@@ -137,6 +137,17 @@ MF_BOMBS=8
   status .res 64
 .endstruct
 
+.enum mf_tile_indices
+  number_0 = 0
+  number_1 = 4
+  number_2 = 8
+  number_3 = 12
+  number_4 = 16
+  flag = 20
+  closed = 24
+  bomb = 28
+.endenum
+
 .enum mf_cell_status
   closed = 0
   flagged
@@ -1825,107 +1836,12 @@ safe:
   INC gamekid_ram+mf_var::opened_cells
   ; draw new megatile
 
-  LDA #$20
-  STA ppu_addr_ptr+1
-  LDA #$00
-  STA ppu_addr_ptr
-  CLC
-  TXA
-  AND #%100
-  BEQ :+
-  LDA #$8
-  ADC ppu_addr_ptr
-  STA ppu_addr_ptr
-:
-  TXA
-  AND #%010
-  BEQ :+
-  LDA #$4
-  ADC ppu_addr_ptr
-  STA ppu_addr_ptr
-:
-  TXA
-  AND #%001
-  BEQ :+
-  LDA #$2
-  ADC ppu_addr_ptr
-  STA ppu_addr_ptr
-:
-  LDA #$E8
-  ADC ppu_addr_ptr
-  STA ppu_addr_ptr
-  BCC :+
-  INC ppu_addr_ptr+1
-:
-  TXA
-  AND #%100000
-  BEQ :+
-  INC ppu_addr_ptr+1
-:
-  TXA
-  AND #%010000
-  BEQ :+
-  LDA #$80
-  CLC
-  ADC ppu_addr_ptr
-  STA ppu_addr_ptr
-  BCC :+
-  INC ppu_addr_ptr+1
-:
-  TXA
-  AND #%001000
-  BEQ :+
-  LDA #$40
-  CLC
-  ADC ppu_addr_ptr
-  STA ppu_addr_ptr
-  BCC :+
-  INC ppu_addr_ptr+1
-:
-
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
-
-  LDA ppu_addr_ptr+1
-  STA PPUADDR
-  LDA ppu_addr_ptr
-  STA PPUADDR
   LDA gamekid_ram+mf_var::table,X
   .repeat 2
   ASL
   .endrepeat
   TAY
-  LDA mf_tiles_per_number,Y
-  STA PPUDATA
-  INY
-  LDA mf_tiles_per_number,Y
-  STA PPUDATA
-  INY
-  CLC
-  LDA #$20
-  ADC ppu_addr_ptr
-  STA ppu_addr_ptr
-  BCC :+
-  INC ppu_addr_ptr+1
-:
-  LDA ppu_addr_ptr+1
-  STA PPUADDR
-  LDA ppu_addr_ptr
-  STA PPUADDR
-  LDA mf_tiles_per_number,Y
-  STA PPUDATA
-  INY
-  LDA mf_tiles_per_number,Y
-  STA PPUDATA
-  INY
-
-  LDA #$20
-  STA PPUADDR
-  LDA #$00
-  STA PPUADDR
-  STA PPUSCROLL
-  STA PPUSCROLL
+  JSR mf_draw_tile
   RTS
 .endproc
 
@@ -1949,16 +1865,22 @@ is_opened:
 is_flagged:
   LDA #mf_cell_status::closed
   STA gamekid_ram+mf_var::status,X
-  LDY #4 ; closed_tiles start at mf_flag_tiles + 4
+  LDY #mf_tile_indices::closed
   JMP draw_tile
 is_closed:
   LDA #mf_cell_status::flagged
   STA gamekid_ram+mf_var::status,X
-  LDY #0 ; mf_flag_tiles + 0
+  LDY #mf_tile_indices::flag
   ; JMP draw_tile
 draw_tile:
+  JSR mf_draw_tile
+  RTS
+.endproc
 
-  LDA #$20
+.proc mf_draw_tile
+  ; displays a tile (indexed by Y)
+  ; at position X (X = 0yyy0xxx)
+    LDA #$20
   STA ppu_addr_ptr+1
   LDA #$00
   STA ppu_addr_ptr
@@ -2025,10 +1947,10 @@ vblankwait:       ; wait for another vblank before continuing
   LDA ppu_addr_ptr
   STA PPUADDR
 
-  LDA mf_flag_tiles,Y
+  LDA mf_tiles,Y
   STA PPUDATA
   INY
-  LDA mf_flag_tiles,Y
+  LDA mf_tiles,Y
   STA PPUDATA
   INY
   CLC
@@ -2042,10 +1964,10 @@ vblankwait:       ; wait for another vblank before continuing
   STA PPUADDR
   LDA ppu_addr_ptr
   STA PPUADDR
-  LDA mf_flag_tiles,Y
+  LDA mf_tiles,Y
   STA PPUDATA
   INY
-  LDA mf_flag_tiles,Y
+  LDA mf_tiles,Y
   STA PPUDATA
   INY
 
@@ -2361,18 +2283,15 @@ wk_level_3_data:
         .byte "---#       x#---"
         .byte "---##########---"
 
-mf_tiles_per_number:
+mf_tiles:
         .byte $E0, $E1, $F0, $F1 ; 0
         .byte $C4, $C5, $D4, $D5 ; 1
         .byte $C6, $C7, $D6, $D7 ; 2
         .byte $E4, $E5, $F4, $F5 ; 3
         .byte $E6, $E7, $F6, $F7 ; 4     
-mf_flag_tiles:
-        .byte $CC, $CD, $DC, $DD
-mf_closed_tiles:
-        .byte $E2, $E3, $F2, $F3
-mf_bomb_tiles:
-        .byte $CE, $CF, $DE, $DF
+        .byte $CC, $CD, $DC, $DD ; flag
+        .byte $E2, $E3, $F2, $F3 ; closed
+        .byte $CE, $CF, $DE, $DF ; bomb
 
 nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
