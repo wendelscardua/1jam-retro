@@ -2111,6 +2111,15 @@ vblankwait:       ; wait for another vblank before continuing
   JSR mf_toggle_flag
 :
 
+  ; check win
+  LDA gamekid_ram+mf_var::opened_cells
+  CMP #(.sizeof(mf_var::table) - MF_BOMBS)
+  BNE :+
+  LDA #game_states::mf_win
+  STA game_state
+:
+
+
   ; draw elements
   LDA #0
   STA sprite_counter
@@ -2118,6 +2127,17 @@ vblankwait:       ; wait for another vblank before continuing
   STA addr_ptr
   LDA #>mf_cursor_sprite
   STA addr_ptr+1
+
+  ; if game ended, hide cursor, else compute actual position
+  LDA game_state
+  CMP #game_states::mf_playing
+  BEQ draw_cursor
+hide_cursor:
+  LDA #$F0
+  STA gamekid_ram+mf_var::player_y
+  JSR display_metasprite
+  RTS
+draw_cursor:
   LDA gamekid_ram+mf_var::player_x
   ; X = x * $10 + $40
   .repeat 4
@@ -2135,8 +2155,6 @@ vblankwait:       ; wait for another vblank before continuing
   ADC #$38
   STA temp_y
   JSR display_metasprite
-
-  ; TODO check win
 
   RTS
 .endproc
