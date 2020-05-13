@@ -131,7 +131,7 @@ MF_BOMBS=8
   player_x .byte ; table coordinates (0..7)
   player_y .byte ; idem
   ready .byte
-  unflagged_bombs .byte
+  opened_cells .byte
   table .res 64
   bomb_table .res 64
   status .res 64
@@ -1704,8 +1704,8 @@ next:
 
 .proc mf_randomize_board
   ; randomize board
-  LDA #MF_BOMBS
-  STA gamekid_ram+mf_var::unflagged_bombs
+  LDA #0
+  STA gamekid_ram+mf_var::opened_cells
   LDA #$00
   LDX #63
 :
@@ -1822,6 +1822,7 @@ is_closed:
 bomb:
   KIL ; TODO game over
 safe:
+  INC gamekid_ram+mf_var::opened_cells
   ; draw new megatile
 
   LDA #$20
@@ -1948,23 +1949,11 @@ is_opened:
 is_flagged:
   LDA #mf_cell_status::closed
   STA gamekid_ram+mf_var::status,X
-  ; if cell has bomb, decrease unflagged bombs
-  LDA gamekid_ram+mf_var::bomb_table,X
-  BEQ :+
-  DEC gamekid_ram+mf_var::unflagged_bombs
-:
   LDY #4 ; closed_tiles start at mf_flag_tiles + 4
   JMP draw_tile
 is_closed:
   LDA #mf_cell_status::flagged
   STA gamekid_ram+mf_var::status,X
-
-  ; if cell had bomb, increase unflagged bombs
-  LDA gamekid_ram+mf_var::bomb_table,X
-  BEQ :+
-  INC gamekid_ram+mf_var::unflagged_bombs
-:
-
   LDY #0 ; mf_flag_tiles + 0
   ; JMP draw_tile
 draw_tile:
