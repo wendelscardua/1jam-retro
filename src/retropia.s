@@ -2174,7 +2174,18 @@ draw_cursor:
 .endproc
 
 .proc mf_lose
-  KIL
+  INC frame_counter
+  LDA frame_counter
+  CMP #GAMEKID_DELAY
+  BNE return
+
+  ; back to title
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::gi_title
+  STA game_state
+
+return:
   RTS
 .endproc
 
