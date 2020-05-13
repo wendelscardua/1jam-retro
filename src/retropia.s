@@ -2160,7 +2160,16 @@ draw_cursor:
 .endproc
 
 .proc mf_win
-  KIL
+  LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$CC
+  STA ppu_addr_ptr
+  print string_you_win
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  KIL ; TODO - return to main game (with bomb)
   RTS
 .endproc
 
