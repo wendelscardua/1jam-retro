@@ -75,6 +75,12 @@ oam_sprites:
   mf_playing
   mf_win
   mf_lose
+  ; rr = river ray (finite swimmer)
+  rr_booting_gamekid
+  rr_title
+  rr_playing
+  rr_win
+  rr_lose
 .endenum
 
 .importzp rng_seed
@@ -298,7 +304,7 @@ vblankwait:       ; wait for another vblank before continuing
   ; JSR FamiToneSfxInit
 
   ; TODO: change to real game initial state when available
-  LDA #game_states::mf_booting_gamekid
+  LDA #game_states::rr_booting_gamekid
   STA game_state
   LDA #$00
   STA frame_counter
@@ -2126,6 +2132,158 @@ return:
   RTS
 .endproc
 
+.proc rr_booting_gamekid
+  JSR gk_booting_gamekid
+  RTS
+.endproc
+
+.proc rr_title
+  LDA frame_counter
+  BNE wait_for_level
+
+  ; insta scroll to title
+  LDA #$01
+  STA current_nametable
+
+wait_for_level:
+  ; TODO: optimize
+  INC frame_counter
+  LDA #GAMEKID_DELAY ; wait a second
+  CMP frame_counter
+  BNE :+
+  LDA #$00
+  STA current_nametable
+
+  ; rr setup
+  LDA #game_states::rr_playing
+  STA game_state
+:
+  ; use the wait to draw the level bg, row by row (gotta go fast)
+  JSR rr_partial_draw_level
+  RTS
+.endproc
+
+.proc rr_partial_draw_level
+  LDA frame_counter
+  CMP #$06
+  BCS :+
+  RTS
+:
+  CMP #$18
+  BCC :+
+  RTS
+:
+
+  TAY
+  LDA current_nametable
+  EOR #%1
+  ASL
+  ASL
+  ORA #$20
+  STA ppu_addr_ptr+1
+  LDA #$00
+  STA ppu_addr_ptr
+
+  ; adding y*$20 to ppu_addr_ptr
+  ; 76543210         76543210 76543210
+  ; 000edcba x $20 = 000000ed cba00000
+
+  ; ed
+  TYA
+  .repeat 3
+  LSR
+  .endrepeat
+  CLC
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+
+  ; cba
+  TYA
+  .repeat 5
+  ASL
+  .endrepeat
+  CLC
+  ADC #$06 ; X offset
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  BCC :+
+  INC ppu_addr_ptr+1
+:
+
+  LDA PPUSTATUS
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+
+  LDX #$08
+row_loop:
+  LDA frame_counter
+  CMP #$06
+  BEQ margin
+  CMP #$17
+  BEQ margin
+  AND #%1
+  BEQ even_row
+
+odd_row:
+  LDA #$E2
+  STA PPUDATA
+  LDA #$E3
+  STA PPUDATA
+  JMP next
+even_row:
+  LDA #$F2
+  STA PPUDATA
+  LDA #$F3
+  STA PPUDATA
+  JMP next
+
+margin:
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+next:
+  DEX
+  BNE row_loop
+
+  LDA #$00
+  STA PPUDATA
+  STA PPUDATA
+
+  LDA current_nametable
+  ASL
+  ASL
+  ORA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  LDA #$00 ; horizontal scroll
+  STA PPUSCROLL
+  STA PPUSCROLL
+
+  RTS
+.endproc
+
+.proc rr_playing
+  KIL
+  RTS
+.endproc
+
+.proc rr_win
+  KIL
+  RTS
+.endproc
+
+.proc rr_lose
+  KIL
+  RTS
+.endproc
+
 .proc gamekid_xy_to_coordinates
   ; input: A = gamekid xy coordinates (high nibble y, low nibble x)
   ; output: temp_x and temp_y = screen xy coordinates
@@ -2205,6 +2363,11 @@ game_state_handlers_l:
   .byte <(mf_playing-1)
   .byte <(mf_win-1)
   .byte <(mf_lose-1)
+  .byte <(rr_booting_gamekid-1)
+  .byte <(rr_title-1)
+  .byte <(rr_playing-1)
+  .byte <(rr_win-1)
+  .byte <(rr_lose-1)
 
 game_state_handlers_h:
   .byte >(main_playing-1)
@@ -2223,6 +2386,11 @@ game_state_handlers_h:
   .byte >(mf_playing-1)
   .byte >(mf_win-1)
   .byte >(mf_lose-1)
+  .byte >(rr_booting_gamekid-1)
+  .byte >(rr_title-1)
+  .byte >(rr_playing-1)
+  .byte >(rr_win-1)
+  .byte >(rr_lose-1)
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
@@ -2303,7 +2471,7 @@ mf_tiles:
         .byte $C4, $C5, $D4, $D5 ; 1
         .byte $C6, $C7, $D6, $D7 ; 2
         .byte $E4, $E5, $F4, $F5 ; 3
-        .byte $E6, $E7, $F6, $F7 ; 4     
+        .byte $E6, $E7, $F6, $F7 ; 4
         .byte $CC, $CD, $DC, $DD ; flag
         .byte $E2, $E3, $F2, $F3 ; closed
         .byte $CE, $CF, $DE, $DF ; bomb
@@ -2313,23 +2481,27 @@ nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
 nametable_wk_title: .incbin "../assets/wk-level/title.rle"
 nametable_gi_title: .incbin "../assets/gi-level/title.rle"
 nametable_mf_title: .incbin "../assets/mf-level/title.rle"
+nametable_rr_title: .incbin "../assets/rr-level/title.rle"
 
 subgame_by_game_state:
         .byte $00 ; main
         .byte $01, $01, $01, $01, $01 ; WK
         .byte $02, $02, $02, $02, $02 ; GI
         .byte $03, $03, $03, $03, $03 ; MF
+        .byte $04, $04, $04, $04, $04 ; RR
 
 subgame_nametables_l:
         .byte $00
         .byte <nametable_wk_title
         .byte <nametable_gi_title
         .byte <nametable_mf_title
+        .byte <nametable_rr_title
 subgame_nametables_h:
         .byte $00
         .byte >nametable_wk_title
         .byte >nametable_gi_title
         .byte >nametable_mf_title
+        .byte >nametable_rr_title
 
 ; music and sfx data
 ;.include "../assets/music/some-music.s"
