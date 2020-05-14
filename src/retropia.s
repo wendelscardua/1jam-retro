@@ -2216,44 +2216,27 @@ wait_for_level:
   LDA ppu_addr_ptr
   STA PPUADDR
 
-  LDA #$00
-  STA PPUDATA
-  STA PPUDATA
-
-  LDX #$08
+  LDX #$0A
 row_loop:
   LDA frame_counter
-  CMP #$06
-  BEQ margin
-  CMP #$17
-  BEQ margin
-  AND #%1
-  BEQ even_row
+  CMP #$0A
+  BCC margin
+  CMP #$14
+  BCS margin
 
-odd_row:
-  LDA #$E2
+  ; draw river
+  LDA #$60
   STA PPUDATA
-  LDA #$E3
-  STA PPUDATA
-  JMP next
-even_row:
-  LDA #$F2
-  STA PPUDATA
-  LDA #$F3
   STA PPUDATA
   JMP next
 
 margin:
-  LDA #$00
+  LDA #$70
   STA PPUDATA
   STA PPUDATA
 next:
   DEX
   BNE row_loop
-
-  LDA #$00
-  STA PPUDATA
-  STA PPUDATA
 
   LDA current_nametable
   ASL
