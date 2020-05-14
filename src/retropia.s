@@ -162,6 +162,7 @@ MF_BOMBS=8
 
 .struct rr_var
   player_y .byte
+  barrier_pattern .byte
 .endstruct
 
 .segment "CODE"
@@ -2154,7 +2155,7 @@ wait_for_level:
   INC frame_counter
   LDA #GAMEKID_DELAY ; wait a second
   CMP frame_counter
-  BNE :+
+  BNE skip_setup
   LDA #$00
   STA current_nametable
 
@@ -2164,6 +2165,15 @@ wait_for_level:
   LDA #$70
   STA gamekid_ram+rr_var::player_y
 :
+  JSR rand
+  LDA rng_seed
+  AND #%11111
+  BEQ :-
+  CMP #%11111
+  BEQ :-
+  STA gamekid_ram+rr_var::barrier_pattern
+
+skip_setup:
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR rr_partial_draw_level
   RTS
