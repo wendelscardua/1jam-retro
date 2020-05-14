@@ -2405,6 +2405,9 @@ gi_player_sprite = metasprite_2_data
 gi_bullet_sprite = metasprite_3_data
 gi_enemy_sprite = metasprite_4_data
 mf_cursor_sprite = metasprite_5_data
+rr_player_sprite = metasprite_6_data
+rr_barrier_sprite = metasprite_7_data
+rr_tree_sprite = metasprite_8_data
 
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
