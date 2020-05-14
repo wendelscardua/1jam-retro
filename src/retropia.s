@@ -163,6 +163,8 @@ MF_BOMBS=8
 .struct rr_var
   player_y .byte
   barrier_pattern .byte
+  next_barrier_counter .byte
+  barrier_delay .byte
 .endstruct
 
 .segment "CODE"
@@ -2172,6 +2174,9 @@ wait_for_level:
   CMP #%11111
   BEQ :-
   STA gamekid_ram+rr_var::barrier_pattern
+  LDA #240
+  STA gamekid_ram+rr_var::next_barrier_counter
+  STA gamekid_ram+rr_var::barrier_delay
 
 skip_setup:
   ; use the wait to draw the level bg, row by row (gotta go fast)
@@ -2290,6 +2295,24 @@ next:
   ADC #$10
   STA gamekid_ram+rr_var::player_y
 :
+
+  ; check for new barriers
+  DEC gamekid_ram+rr_var::next_barrier_counter
+  BNE no_new_barrier
+  ; reset barrier counter
+  LDA gamekid_ram+rr_var::barrier_delay
+  STA gamekid_ram+rr_var::next_barrier_counter
+
+  ; TODO add barrier
+
+  ; select next barrier in sequence
+  LDX gamekid_ram+rr_var::barrier_pattern
+  LDA rr_barrier_transitions,X
+  STA gamekid_ram+rr_var::barrier_pattern
+
+no_new_barrier:
+
+  ; TODO: update all barriers
 
   ; draw elements
   LDA #0
