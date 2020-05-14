@@ -160,6 +160,10 @@ MF_BOMBS=8
   opened
 .endenum
 
+.struct rr_var
+  player_y .byte
+.endstruct
+
 .segment "CODE"
 
 .import reset_handler
@@ -2157,6 +2161,8 @@ wait_for_level:
   ; rr setup
   LDA #game_states::rr_playing
   STA game_state
+  LDA #$70
+  STA gamekid_ram+rr_var::player_y
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR rr_partial_draw_level
@@ -2253,7 +2259,42 @@ next:
 .endproc
 
 .proc rr_playing
-  KIL
+  JSR readjoy
+  LDA pressed_buttons
+  AND #BUTTON_UP
+  BEQ :+
+  LDA gamekid_ram+rr_var::player_y
+  CMP #$50
+  BEQ :+
+  SEC
+  SBC #$10
+  STA gamekid_ram+rr_var::player_y
+:
+  LDA pressed_buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+  LDA gamekid_ram+rr_var::player_y
+  CMP #$90
+  BEQ :+
+  CLC
+  ADC #$10
+  STA gamekid_ram+rr_var::player_y
+:
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+
+  LDA #<rr_player_sprite
+  STA addr_ptr
+  LDA #>rr_player_sprite
+  STA addr_ptr+1
+  LDA #$30
+  STA temp_x
+  LDA gamekid_ram+rr_var::player_y
+  STA temp_y
+  JSR display_metasprite
+
   RTS
 .endproc
 
