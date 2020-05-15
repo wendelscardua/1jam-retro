@@ -162,8 +162,9 @@ MF_BOMBS=8
 
 RR_MAX_BARRIERS=$1F
 RR_MIN_DELAY=20
+RR_INITIAL_DELAY=120
 RR_SCORE_FOR_SPEEDUP=$10
-RR_FLAG_DELAY=60
+RR_FLAG_DELAY=180
 .struct rr_var
   player_y .byte
   player_lives .byte
@@ -2201,7 +2202,7 @@ wait_for_level:
   CMP #%11111
   BEQ :-
   STA gamekid_ram+rr_var::barrier_pattern
-  LDA #240
+  LDA #RR_INITIAL_DELAY
   STA gamekid_ram+rr_var::next_barrier_counter
   STA gamekid_ram+rr_var::barrier_delay
 
@@ -2463,6 +2464,7 @@ update_barrier_loop:
   BCS :+
   LDA #RR_FLAG_DELAY
   STA gamekid_ram+rr_var::barrier_delay
+  STA gamekid_ram+rr_var::next_barrier_counter
   LDA #%11111
   STA gamekid_ram+rr_var::barrier_pattern
 :
