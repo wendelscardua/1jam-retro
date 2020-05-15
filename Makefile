@@ -3,7 +3,7 @@ LD65_FLAGS=
 CA65_FLAGS=
 
 ${PROJECT}.nes: src/${PROJECT}.o src/reset.o src/readjoy.o src/rand.o src/unrle.o
-	ld65 $^ -t nes -o ${PROJECT}.nes ${LD65_FLAGS}
+	ld65 $^ -t nes -o ${PROJECT}.nes ${LD65_FLAGS} --dbgfile ${PROJECT}.nes.dbg
 
 debug: LD65_FLAGS += -Ln labels.txt
 debug: CA65_FLAGS += -g
