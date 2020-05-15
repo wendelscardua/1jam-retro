@@ -163,6 +163,7 @@ MF_BOMBS=8
 RR_MAX_BARRIERS=$1F
 RR_MIN_DELAY=20
 RR_SCORE_FOR_SPEEDUP=$10
+RR_FLAG_DELAY=60
 .struct rr_var
   player_y .byte
   player_lives .byte
@@ -172,6 +173,7 @@ RR_SCORE_FOR_SPEEDUP=$10
   barrier_delay .byte
   barrier_x .res $1F
   barrier_y .res $1F
+  flag_x .byte
 .endstruct
 
 .segment "CODE"
@@ -2174,6 +2176,7 @@ wait_for_level:
   LDA #$70
   STA gamekid_ram+rr_var::player_y
   LDA #$00
+  STA gamekid_ram+rr_var::flag_x
   STA gamekid_ram+rr_var::player_score
   LDA #$05
   STA gamekid_ram+rr_var::player_lives
@@ -2361,6 +2364,8 @@ return:
 :
 
   ; check for new barriers
+  LDA gamekid_ram+rr_var::flag_x
+  BNE no_new_barrier
   DEC gamekid_ram+rr_var::next_barrier_counter
   BNE no_new_barrier
   ; reset barrier counter
@@ -2372,8 +2377,15 @@ return:
   LDA #$50 ; y position of new barrier
   STA temp_y
 
+  ; check if it's time to end
+
   LDA gamekid_ram+rr_var::barrier_pattern
   STA temp_a
+  CMP #%11111
+  BNE barrier_loop
+  LDA #$C0
+  STA gamekid_ram+rr_var::flag_x
+  JMP no_new_barrier
 barrier_loop:
   LDA temp_a
   BEQ end_barrier_loop
@@ -2410,6 +2422,16 @@ end_barrier_loop:
 no_new_barrier:
 
   ; TODO: update all barriers
+  LDA gamekid_ram+rr_var::flag_x
+  BEQ :+
+  .repeat 2
+  DEC gamekid_ram+rr_var::flag_x
+  .endrepeat
+  BNE :+
+  ; flag is gone, game over, you win!
+  KIL
+:
+
   LDX #(RR_MAX_BARRIERS-1)
 update_barrier_loop:
   LDA gamekid_ram+rr_var::barrier_x, X
@@ -2439,8 +2461,10 @@ update_barrier_loop:
   STA gamekid_ram+rr_var::barrier_delay
   CMP #RR_MIN_DELAY
   BCS :+
-  LDA #RR_MIN_DELAY
+  LDA #RR_FLAG_DELAY
   STA gamekid_ram+rr_var::barrier_delay
+  LDA #%11111
+  STA gamekid_ram+rr_var::barrier_pattern
 :
 
   JMP next_barrier_to_update
@@ -2487,6 +2511,38 @@ draw_barrier_loop:
 skip_draw_barrier:
   DEX
   BPL draw_barrier_loop
+
+  LDA gamekid_ram+rr_var::flag_x
+  BEQ :+
+  CMP #$30
+  BCC :+
+  STA temp_x
+  LDA #<rr_flag_sprite
+  STA addr_ptr
+  LDA #>rr_flag_sprite
+  STA addr_ptr+1
+  LDA #$50
+  STA temp_y
+  JSR display_metasprite
+  LDA #$60
+  STA temp_y
+  JSR display_metasprite
+  LDA #$70
+  STA temp_y
+  JSR display_metasprite
+  LDA #$80
+  STA temp_y
+  JSR display_metasprite
+  LDA #$90
+  STA temp_y
+  JSR display_metasprite
+:
+
+  LDA #<rr_barrier_sprite
+  STA addr_ptr
+  LDA #>rr_barrier_sprite
+  STA addr_ptr+1
+
 
   ; ensure we erase sprites if we lost a metasprite before
   LDX sprite_counter
@@ -2709,7 +2765,7 @@ mf_tiles:
 
 rr_barrier_transitions:
         ; computed with transitions.rb
-        .byte %00000 ; unused
+        .byte %00000 ; (endgame)
         .byte %10011 ; from 00001
         .byte %10101 ; from 00010
         .byte %00111 ; from 00011
@@ -2740,7 +2796,7 @@ rr_barrier_transitions:
         .byte %11110 ; from 11100
         .byte %00100 ; from 11101
         .byte %01100 ; from 11110
-        .byte %11111 ; unused
+        .byte %00000 ; from 11111 (victory flag)
 
 nametable_level_0: .incbin "../assets/level/level-0.rle"
 nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
