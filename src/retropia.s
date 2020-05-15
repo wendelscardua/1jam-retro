@@ -164,6 +164,7 @@ RR_MAX_BARRIERS=$1F
 .struct rr_var
   player_y .byte
   player_lives .byte
+  player_score .byte
   barrier_pattern .byte
   next_barrier_counter .byte
   barrier_delay .byte
@@ -2170,6 +2171,8 @@ wait_for_level:
   STA game_state
   LDA #$70
   STA gamekid_ram+rr_var::player_y
+  LDA #$00
+  STA gamekid_ram+rr_var::player_score
   LDA #$05
   STA gamekid_ram+rr_var::player_lives
 
@@ -2324,6 +2327,7 @@ next:
   STA PPUSCROLL
   PLA
   TAX
+  LDA gamekid_ram+rr_var::player_lives
   BNE return
   LDA #game_states::rr_lose
   STA game_state
