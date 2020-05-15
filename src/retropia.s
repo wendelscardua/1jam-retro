@@ -161,6 +161,8 @@ MF_BOMBS=8
 .endenum
 
 RR_MAX_BARRIERS=$1F
+RR_MIN_DELAY=20
+RR_SCORE_FOR_SPEEDUP=$10
 .struct rr_var
   player_y .byte
   player_lives .byte
@@ -2414,11 +2416,38 @@ update_barrier_loop:
   BEQ next_barrier_to_update
   CMP #$30
   BNE move_barrier
+
+; erase barrier
   LDA #$00
   STA gamekid_ram+rr_var::barrier_x, X
+
+  INC gamekid_ram+rr_var::player_score
+  LDA gamekid_ram+rr_var::player_score
+  CMP #RR_SCORE_FOR_SPEEDUP
+  BCC next_barrier_to_update
+  ; every $10 barriers, increase speed
+  LDA #$00
+  STA gamekid_ram+rr_var::player_score
+  LDA gamekid_ram+rr_var::barrier_delay
+  PHA
+  LSR
+  LSR
+  STA temp_a
+  SEC
+  PLA
+  SBC temp_a
+  STA gamekid_ram+rr_var::barrier_delay
+  CMP #RR_MIN_DELAY
+  BCS :+
+  LDA #RR_MIN_DELAY
+  STA gamekid_ram+rr_var::barrier_delay
+:
+
   JMP next_barrier_to_update
 move_barrier:
+  .repeat 2
   DEC gamekid_ram+rr_var::barrier_x, X
+  .endrepeat
   JSR rr_check_collision
 next_barrier_to_update:
   DEX
