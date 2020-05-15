@@ -2766,36 +2766,36 @@ mf_tiles:
 rr_barrier_transitions:
         ; computed with transitions.rb
         .byte %00000 ; (endgame)
-        .byte %10011 ; from 00001
-        .byte %10101 ; from 00010
-        .byte %00111 ; from 00011
-        .byte %00001 ; from 00100
-        .byte %01011 ; from 00101
-        .byte %01110 ; from 00110
+        .byte %10001 ; from 00001
+        .byte %01000 ; from 00010
+        .byte %10111 ; from 00011
+        .byte %01101 ; from 00100
+        .byte %10110 ; from 00101
+        .byte %10000 ; from 00110
         .byte %01111 ; from 00111
-        .byte %10001 ; from 01000
-        .byte %10010 ; from 01001
-        .byte %01101 ; from 01010
-        .byte %00110 ; from 01011
-        .byte %00101 ; from 01100
-        .byte %00011 ; from 01101
-        .byte %10110 ; from 01110
-        .byte %10000 ; from 01111
-        .byte %01001 ; from 10000
-        .byte %11011 ; from 10001
-        .byte %11010 ; from 10010
-        .byte %10111 ; from 10011
-        .byte %11000 ; from 10100
-        .byte %01000 ; from 10101
-        .byte %01010 ; from 10110
-        .byte %11001 ; from 10111
-        .byte %11100 ; from 11000
-        .byte %11101 ; from 11001
-        .byte %00010 ; from 11010
-        .byte %10100 ; from 11011
+        .byte %00101 ; from 01000
+        .byte %10011 ; from 01001
+        .byte %10101 ; from 01010
+        .byte %10100 ; from 01011
+        .byte %01001 ; from 01100
+        .byte %10010 ; from 01101
+        .byte %00100 ; from 01110
+        .byte %00011 ; from 01111
+        .byte %11001 ; from 10000
+        .byte %01010 ; from 10001
+        .byte %00010 ; from 10010
+        .byte %11011 ; from 10011
+        .byte %01100 ; from 10100
+        .byte %01011 ; from 10101
+        .byte %11010 ; from 10110
+        .byte %01110 ; from 10111
+        .byte %11101 ; from 11000
+        .byte %11100 ; from 11001
+        .byte %11000 ; from 11010
+        .byte %00111 ; from 11011
         .byte %11110 ; from 11100
-        .byte %00100 ; from 11101
-        .byte %01100 ; from 11110
+        .byte %00110 ; from 11101
+        .byte %00001 ; from 11110
         .byte %00000 ; from 11111 (victory flag)
 
 nametable_level_0: .incbin "../assets/level/level-0.rle"
