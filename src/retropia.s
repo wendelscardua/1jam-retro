@@ -160,11 +160,14 @@ MF_BOMBS=8
   opened
 .endenum
 
+RR_MAX_BARRIERS=$1F
 .struct rr_var
   player_y .byte
   barrier_pattern .byte
   next_barrier_counter .byte
   barrier_delay .byte
+  barrier_x .res $1F
+  barrier_y .res $1F
 .endstruct
 
 .segment "CODE"
@@ -2304,6 +2307,39 @@ next:
   STA gamekid_ram+rr_var::next_barrier_counter
 
   ; TODO add barrier
+  LDX #$00 ; index of barrier_{x,y} array
+  LDA #$50 ; y position of new barrier
+  STA temp_y
+
+  LDA gamekid_ram+rr_var::barrier_pattern
+  STA temp_a
+barrier_loop:
+  LDA temp_a
+  BEQ end_barrier_loop
+  CLC
+  ROR temp_a
+  BCC next_iteration
+
+free_x_loop:
+  LDA gamekid_ram+rr_var::barrier_x, X
+  BEQ found_free_x
+  INX
+  JMP free_x_loop
+found_free_x:
+  LDA #$C8
+  STA gamekid_ram+rr_var::barrier_x, X
+  LDA temp_y
+  STA gamekid_ram+rr_var::barrier_y, X
+  INX
+
+next_iteration:
+  LDA #$10
+  CLC
+  ADC temp_y
+  STA temp_y
+  JMP barrier_loop
+end_barrier_loop:
+
 
   ; select next barrier in sequence
   LDX gamekid_ram+rr_var::barrier_pattern
@@ -2313,6 +2349,20 @@ next:
 no_new_barrier:
 
   ; TODO: update all barriers
+  LDX #(RR_MAX_BARRIERS-1)
+update_barrier_loop:
+  LDA gamekid_ram+rr_var::barrier_x, X
+  BEQ next_barrier_to_update
+  CMP #$30
+  BNE move_barrier
+  LDA #$00
+  STA gamekid_ram+rr_var::barrier_x, X
+  JMP next_barrier_to_update
+move_barrier:
+  DEC gamekid_ram+rr_var::barrier_x, X
+next_barrier_to_update:
+  DEX
+  BPL update_barrier_loop
 
   ; draw elements
   LDA #0
@@ -2327,6 +2377,37 @@ no_new_barrier:
   LDA gamekid_ram+rr_var::player_y
   STA temp_y
   JSR display_metasprite
+
+  LDA #<rr_barrier_sprite
+  STA addr_ptr
+  LDA #>rr_barrier_sprite
+  STA addr_ptr+1
+
+  LDX #(RR_MAX_BARRIERS-1)
+draw_barrier_loop:
+  LDA gamekid_ram+rr_var::barrier_x, X
+  BEQ skip_draw_barrier
+  STA temp_x
+  LDA gamekid_ram+rr_var::barrier_y, X
+  STA temp_y
+  TXA
+  PHA
+  JSR display_metasprite
+  PLA
+  TAX
+skip_draw_barrier:
+  DEX
+  BPL draw_barrier_loop
+
+  ; ensure we erase sprites if we lost a metasprite before
+  LDX sprite_counter
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
 
   RTS
 .endproc
