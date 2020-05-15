@@ -163,6 +163,7 @@ MF_BOMBS=8
 RR_MAX_BARRIERS=$1F
 .struct rr_var
   player_y .byte
+  player_lives .byte
   barrier_pattern .byte
   next_barrier_counter .byte
   barrier_delay .byte
@@ -2169,6 +2170,21 @@ wait_for_level:
   STA game_state
   LDA #$70
   STA gamekid_ram+rr_var::player_y
+  LDA #$05
+  STA gamekid_ram+rr_var::player_lives
+
+  TAX
+
+  LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$C6
+  STA ppu_addr_ptr
+  print string_lives
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
 :
   JSR rand
   LDA rng_seed
@@ -2276,6 +2292,45 @@ next:
   RTS
 .endproc
 
+.proc rr_check_collision
+  ; input: X = index of barrier_{x,y}
+  ; reduces player lives if player collided with barrier
+  ; changes game state to rr_lose if player has no life left
+  LDA gamekid_ram+rr_var::barrier_x, X
+  BEQ return
+  CMP #$40
+  BCS return
+  LDA gamekid_ram+rr_var::barrier_y, X
+  CMP gamekid_ram+rr_var::player_y
+  BNE return
+  LDA #$00
+  STA gamekid_ram+rr_var::barrier_x, X ; "remove" barrier
+  DEC gamekid_ram+rr_var::player_lives
+
+  TXA
+  PHA
+  LDX gamekid_ram+rr_var::player_lives
+
+  LDA #$20
+  STA ppu_addr_ptr+1
+  LDA #$C6
+  STA ppu_addr_ptr
+  print string_lives
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
+  PLA
+  TAX
+  BNE return
+  LDA #game_states::rr_lose
+  STA game_state
+return:
+  RTS
+.endproc
+
 .proc rr_playing
   JSR readjoy
   LDA pressed_buttons
@@ -2360,6 +2415,7 @@ update_barrier_loop:
   JMP next_barrier_to_update
 move_barrier:
   DEC gamekid_ram+rr_var::barrier_x, X
+  JSR rr_check_collision
 next_barrier_to_update:
   DEX
   BPL update_barrier_loop
