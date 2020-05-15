@@ -60,6 +60,14 @@
 	.byte   0,  0,$e3,3
 	.byte 128
 
+	metasprite_9_data:
+
+	.byte   0,  0,$f3,3
+	.byte   8,  0,$f3,3
+	.byte   0,  8,$f3,3
+	.byte   8,  8,$f3,3
+	.byte 128
+
 	metasprite_pointers:
 
 	.word metasprite_0_data
@@ -71,4 +79,5 @@
 	.word metasprite_6_data
 	.word metasprite_7_data
 	.word metasprite_8_data
+	.word metasprite_9_data
 
