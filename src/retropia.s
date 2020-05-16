@@ -56,7 +56,8 @@ oam_sprites:
 .zeropage
 
 .enum game_states
-  main_playing = 0
+  ; main game stuff
+  main_playing
   ; wk = workhouse keeper (sokoban clone)
   wk_booting_gamekid
   wk_title
@@ -92,6 +93,7 @@ oam_sprites:
 
 addr_ptr: .res 2 ; generic address pointer
 ppu_addr_ptr: .res 2 ; temporary address for PPU_ADDR
+second_rle_ptr: .res 2 ; secondary nametable pointer
 nmis: .res 1
 old_nmis: .res 1
 args: .res 5
@@ -321,11 +323,12 @@ vblankwait:       ; wait for another vblank before continuing
   ; LDA #1
   ; JSR FamiToneSfxInit
 
-  ; TODO: change to real game initial state when available
-  LDA #game_states::rr_booting_gamekid
+  ; TODO: change to title screen when available
+  LDA #game_states::main_playing
   STA game_state
-  LDA #$00
-  STA frame_counter
+  LDA #0
+  STA current_level
+  JSR load_level
 
 forever:
   LDA nmis
@@ -342,8 +345,26 @@ etc:
 .endproc
 
 .proc load_level
+  ; loads current level for main game
+  LDX current_level
+  LDA levels_l, X
+  STA addr_ptr
+  LDA levels_h, X
+  STA addr_ptr+1
+  LDY #0
+  LDA (addr_ptr),Y
+  INY
+  STA rle_ptr
+  LDA (addr_ptr),Y
+  INY
+  STA rle_ptr+1
+  JSR load_nametable
+  RTS
+.endproc
+
+.proc load_nametable
 ; expects rle_ptr to already point to rle data
-; if addr_ptr is present, uses it to load second bg
+; if second_rle_ptr is present, uses it to load second bg
   BIT PPUSTATUS
   LDA #%00010000  ; turn off NMIs
   STA PPUCTRL
@@ -368,15 +389,19 @@ etc:
   LDA #$00
   STA PPUADDR
   JSR unrle
-  LDA addr_ptr
+  LDA second_rle_ptr
   BEQ :++
 :  ; wait for another vblank before continuing
   BIT PPUSTATUS
   BPL :-
-  LDA addr_ptr
+  LDA second_rle_ptr
   STA rle_ptr
-  LDA addr_ptr+1
+  LDA #$00
+  STA second_rle_ptr
+  LDA second_rle_ptr+1
   STA rle_ptr+1
+  LDA #$00
+  STA second_rle_ptr+1
   LDA #$24
   STA PPUADDR
   LDA #$00
@@ -525,15 +550,15 @@ exit:
   STA rle_ptr
   LDA #>nametable_gamekid_boot
   STA rle_ptr+1
-  ; ... and also wk title
+  ; ... and also subgame title
   LDX game_state
   LDA subgame_by_game_state,X
   TAX
   LDA subgame_nametables_l,X
-  STA addr_ptr
+  STA second_rle_ptr
   LDA subgame_nametables_h,X
-  STA addr_ptr+1
-  JSR load_level
+  STA second_rle_ptr+1
+  JSR load_nametable
 
 wait_for_title:
   ; TODO: optimize
@@ -2758,8 +2783,10 @@ string_game_over: .byte "GAME", $5B, "OVER", $00
 string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
 
-levels:
-        .word level_0_data
+levels_l:
+        .byte <level_0_data
+levels_h:
+        .byte >level_0_data
 
         ; level data format:
         ; pointer to rle bg nametable
