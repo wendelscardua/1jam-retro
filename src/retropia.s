@@ -2179,6 +2179,12 @@ wait_for_level:
   STA gamekid_ram+rr_var::player_y
   LDA #$00
   STA gamekid_ram+rr_var::flag_x
+  LDX #(RR_MAX_BARRIERS-1)
+:
+  STA gamekid_ram+rr_var::barrier_x, X
+  DEX
+  BPL :-
+
   LDA #<RR_SPEEDUP_DELAY
   STA gamekid_ram+rr_var::speedup_timer
   LDA #>RR_SPEEDUP_DELAY
@@ -2341,6 +2347,17 @@ next:
   BNE return
   LDA #game_states::rr_lose
   STA game_state
+
+  LDA #$21
+  STA ppu_addr_ptr+1
+  LDA #$8B
+  STA ppu_addr_ptr
+  print string_game_over
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA frame_counter
 return:
   RTS
 .endproc
@@ -2465,7 +2482,8 @@ no_new_barrier:
   .endrepeat
   BNE :+
   ; flag is gone, game over, you win!
-  KIL
+  LDA #game_states::rr_win
+  STA game_state
 :
 
   LDX #(RR_MAX_BARRIERS-1)
@@ -2570,12 +2588,42 @@ skip_draw_barrier:
 .endproc
 
 .proc rr_win
-  KIL
+  LDA #$21
+  STA ppu_addr_ptr+1
+  LDA #$8C
+  STA ppu_addr_ptr
+  print string_you_win
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  KIL ; TODO - return to main game (with swimming)
   RTS
 .endproc
 
 .proc rr_lose
-  KIL
+  INC frame_counter
+  LDA frame_counter
+  CMP #GAMEKID_DELAY
+  BNE return
+
+  ; back to title
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::rr_title
+  STA game_state
+
+  ; also erase sprites
+  LDX 0
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
+return:
   RTS
 .endproc
 
