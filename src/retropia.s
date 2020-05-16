@@ -163,12 +163,13 @@ MF_BOMBS=8
 RR_MAX_BARRIERS=$1F
 RR_MIN_DELAY=20
 RR_INITIAL_DELAY=120
-RR_SCORE_FOR_SPEEDUP=$10
+RR_DELTA_DELAY=20
+RR_SPEEDUP_DELAY=15 * 60 ; 15 seconds
 RR_FLAG_DELAY=180
 .struct rr_var
   player_y .byte
   player_lives .byte
-  player_score .byte
+  speedup_timer .word
   barrier_pattern .byte
   next_barrier_counter .byte
   barrier_delay .byte
@@ -2178,7 +2179,10 @@ wait_for_level:
   STA gamekid_ram+rr_var::player_y
   LDA #$00
   STA gamekid_ram+rr_var::flag_x
-  STA gamekid_ram+rr_var::player_score
+  LDA #<RR_SPEEDUP_DELAY
+  STA gamekid_ram+rr_var::speedup_timer
+  LDA #>RR_SPEEDUP_DELAY
+  STA gamekid_ram+rr_var::speedup_timer+1
   LDA #$05
   STA gamekid_ram+rr_var::player_lives
 
@@ -2364,6 +2368,37 @@ return:
   STA gamekid_ram+rr_var::player_y
 :
 
+  ; timer for speedup/endgame
+  DEC gamekid_ram+rr_var::speedup_timer
+  LDA gamekid_ram+rr_var::speedup_timer
+  CMP #$FF
+  BNE no_speedup
+  DEC gamekid_ram+rr_var::speedup_timer+1
+  LDA gamekid_ram+rr_var::speedup_timer+1
+  CMP #$FF
+  BPL no_speedup
+
+  ; speedup time
+  LDA #<RR_SPEEDUP_DELAY
+  STA gamekid_ram+rr_var::speedup_timer
+  LDA #>RR_SPEEDUP_DELAY
+  STA gamekid_ram+rr_var::speedup_timer+1
+  LDA gamekid_ram+rr_var::barrier_delay
+  CMP #RR_MIN_DELAY
+  BEQ begin_endgame
+  SEC
+  SBC #RR_DELTA_DELAY
+  STA gamekid_ram+rr_var::barrier_delay
+  JMP no_speedup
+
+begin_endgame:
+  LDA #RR_FLAG_DELAY
+  STA gamekid_ram+rr_var::barrier_delay
+  STA gamekid_ram+rr_var::next_barrier_counter
+  LDA #%11111
+  STA gamekid_ram+rr_var::barrier_pattern
+
+no_speedup:
   ; check for new barriers
   LDA gamekid_ram+rr_var::flag_x
   BNE no_new_barrier
@@ -2443,33 +2478,8 @@ update_barrier_loop:
 ; erase barrier
   LDA #$00
   STA gamekid_ram+rr_var::barrier_x, X
-
-  INC gamekid_ram+rr_var::player_score
-  LDA gamekid_ram+rr_var::player_score
-  CMP #RR_SCORE_FOR_SPEEDUP
-  BCC next_barrier_to_update
-  ; every $10 barriers, increase speed
-  LDA #$00
-  STA gamekid_ram+rr_var::player_score
-  LDA gamekid_ram+rr_var::barrier_delay
-  PHA
-  LSR
-  LSR
-  STA temp_a
-  SEC
-  PLA
-  SBC temp_a
-  STA gamekid_ram+rr_var::barrier_delay
-  CMP #RR_MIN_DELAY
-  BCS :+
-  LDA #RR_FLAG_DELAY
-  STA gamekid_ram+rr_var::barrier_delay
-  STA gamekid_ram+rr_var::next_barrier_counter
-  LDA #%11111
-  STA gamekid_ram+rr_var::barrier_pattern
-:
-
   JMP next_barrier_to_update
+
 move_barrier:
   .repeat 2
   DEC gamekid_ram+rr_var::barrier_x, X
