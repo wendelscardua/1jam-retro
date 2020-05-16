@@ -84,6 +84,25 @@ oam_sprites:
   rr_lose
 .endenum
 
+.struct Box
+  x1 .byte
+  y1 .byte
+  x2 .byte
+  y2 .byte
+.endstruct
+
+.struct AnimData
+  hitbox .tag Box
+  up_sprite_1 .word
+  up_sprite_2 .word
+  down_sprite_1 .word
+  down_sprite_2 .word
+  left_sprite_1 .word
+  left_sprite_2 .word
+  right_sprite_1 .word
+  right_sprite_2 .word
+.endstruct
+
 .importzp rng_seed
 .importzp buttons
 .importzp last_frame_buttons
@@ -2800,6 +2819,16 @@ rr_player_sprite = metasprite_6_data
 rr_barrier_sprite = metasprite_7_data
 rr_tree_sprite = metasprite_8_data
 rr_flag_sprite = metasprite_9_data
+
+anim_stuff:
+        .word player_anim_data
+
+player_anim_data:
+        .byte $00, $00, $0F, $0F ; hitbox
+        .word metasprite_10_data, metasprite_11_data ; walking up
+        .word metasprite_12_data, metasprite_13_data ; walking down
+        .word metasprite_14_data, metasprite_15_data ; walking left
+        .word metasprite_16_data, metasprite_17_data ; walking right
 
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
