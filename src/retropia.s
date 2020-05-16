@@ -94,6 +94,7 @@ oam_sprites:
 addr_ptr: .res 2 ; generic address pointer
 ppu_addr_ptr: .res 2 ; temporary address for PPU_ADDR
 second_rle_ptr: .res 2 ; secondary nametable pointer
+palette_ptr: .res 2 ; pointer to palettes
 nmis: .res 1
 old_nmis: .res 1
 args: .res 5
@@ -287,17 +288,7 @@ clear_ram:
   BNE clear_ram
 
   ; load palettes
-  LDX PPUSTATUS
-  LDX #$3f
-  STX PPUADDR
-  LDX #$00
-  STX PPUADDR
-load_palettes:
-  LDA palettes,X
-  STA PPUDATA
-  INX
-  CPX #$20
-  BNE load_palettes
+  JSR load_palettes
 
   LDA #$23
   STA rng_seed
@@ -344,6 +335,23 @@ etc:
   JMP forever
 .endproc
 
+.proc load_palettes
+  ; input: palette_ptr points to palettes
+  ; cobbles Y
+  LDY PPUSTATUS
+  LDY #$3f
+  STY PPUADDR
+  LDY #$00
+  STY PPUADDR
+:
+  LDA (palette_ptr),Y
+  STA PPUDATA
+  INY
+  CPY #$20
+  BNE :-
+  RTS
+.endproc
+
 .proc load_level
   ; loads current level for main game
   LDX current_level
@@ -358,6 +366,10 @@ etc:
   LDA (addr_ptr),Y
   INY
   STA rle_ptr+1
+  LDA #<palettes
+  STA palette_ptr
+  LDA #>palettes
+  STA palette_ptr+1
   JSR load_nametable
   RTS
 .endproc
@@ -413,6 +425,8 @@ etc:
 vblankwait:       ; wait for another vblank before continuing
   BIT PPUSTATUS
   BPL vblankwait
+
+  JSR load_palettes
 
   BIT PPUSTATUS
   LDA #%10010000  ; turn of NMIs
@@ -558,6 +572,12 @@ exit:
   STA second_rle_ptr
   LDA subgame_nametables_h,X
   STA second_rle_ptr+1
+
+  LDA #<gamekid_palettes
+  STA palette_ptr
+  LDA #>gamekid_palettes
+  STA palette_ptr+1
+
   JSR load_nametable
 
 wait_for_title:
@@ -2763,6 +2783,9 @@ game_state_handlers_h:
 palettes:
 .incbin "../assets/bg-palettes.pal"
 .incbin "../assets/sprite-palettes.pal"
+gamekid_palettes:
+.incbin "../assets/bg-gk-palettes.pal"
+.incbin "../assets/sprite-gk-palettes.pal"
 
 sprites:
 .include "../assets/metasprites.s"
