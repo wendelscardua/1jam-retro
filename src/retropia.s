@@ -2954,16 +2954,36 @@ string_you_win: .byte "YOU", $5B, "WIN", $00
 levels_l:
         .byte $00 ; padding
         .byte <level_1_data
+        .byte <level_2_data
+        .byte <level_3_data
+        .byte <level_4_data
+        .byte <level_5_data
 levels_h:
         .byte $00 ; padding
         .byte >level_1_data
+        .byte >level_2_data
+        .byte >level_3_data
+        .byte >level_4_data
+        .byte >level_5_data
 
         ; level data format:
         ; pointer to rle bg nametable
         ; index of level exits (up,down,left,right)
 level_1_data:
         .word nametable_screen_grass_oooo
-
+        .byte $02, $03, $04, $05
+level_2_data:
+        .word nametable_screen_grass_cocc
+        .byte $00, $01, $00, $00
+level_3_data:
+        .word nametable_screen_grass_occc
+        .byte $01, $00, $00, $00
+level_4_data:
+        .word nametable_screen_grass_ccco
+        .byte $00, $00, $00, $01
+level_5_data:
+        .word nametable_screen_grass_ccoc
+        .byte $00, $00, $01, $00
 
 wk_levels:
         .word wk_level_1_data
@@ -3056,6 +3076,10 @@ rr_barrier_transitions:
         .byte %00000 ; from 11111 (victory flag)
 
 nametable_screen_grass_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
+nametable_screen_grass_occc: .incbin "../assets/nametables/screens/grass-occc.rle"
+nametable_screen_grass_cocc: .incbin "../assets/nametables/screens/grass-cocc.rle"
+nametable_screen_grass_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
+nametable_screen_grass_ccco: .incbin "../assets/nametables/screens/grass-ccco.rle"
 
 nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
 nametable_wk_title: .incbin "../assets/nametables/gamekid-titles/wk.rle"
