@@ -92,7 +92,6 @@ oam_sprites:
 .endstruct
 
 .struct AnimData
-  hitbox .tag Box
   up_sprite_1 .word
   up_sprite_2 .word
   down_sprite_1 .word
@@ -656,7 +655,7 @@ draw_elements_loop:
   LDA objects+Object::anim_data_ptr_h, X
   STA addr_ptr+1
   ; then we find the right index to metasprite inside anim_data
-  ; Y = 4 (hitbox) + 4 * direction + 2 * sprite_toggle_relevant_bit
+  ; Y = 4 * direction + 2 * sprite_toggle_relevant_bit
   CLC
   LDA objects+Object::sprite_toggle, X
   AND #%1000 ; toggle sprite every 8 frames
@@ -665,7 +664,6 @@ draw_elements_loop:
   .repeat 4
   ADC objects+Object::direction, X
   .endrepeat
-  ADC #4
   TAY
 
   LDA (addr_ptr),Y
@@ -2940,7 +2938,6 @@ rr_flag_sprite = metasprite_9_data
 
 ; data fitting AnimData struct
 player_anim_data:
-        .byte $00, $00, $0F, $0F ; hitbox
         .word metasprite_10_data, metasprite_11_data ; walking up
         .word metasprite_12_data, metasprite_13_data ; walking down
         .word metasprite_14_data, metasprite_15_data ; walking left
