@@ -154,6 +154,7 @@ temp_a: .res 1
 temp_b: .res 1
 temp_x: .res 1
 temp_y: .res 1
+temp_hitbox: .tag Box
 num_objects: .res 1
 objects: .tag Object
 
@@ -767,6 +768,51 @@ draw_elements_loop:
   DEX
   BPL draw_elements_loop
 
+  RTS
+.endproc
+
+.proc temp_hitbox_collision
+  ; returns 1 in A if player hitbox and temp_hitbox intersect
+  ; Pseudo-code:
+  ;  ((a.x1,a.y1),(a.x2,a.y2)) and ((b.x1,b.y1),(b.x2,b.y2))
+  ;
+  ;  if (a.x2<b.x1 or b.x2<a.x1 or a.y2<b.y1 or b.y2<a.y1):
+  ;      don't intersect
+  ;  else
+  ;      intersect
+  ;
+  ;  Also: foo < bar ==> foo; CMP bar; carry is clear
+  CLC
+  LDA hitbox_x2
+  CMP temp_hitbox+Box::x1
+  BCS :+
+  LDA #$00
+  RTS
+:
+  CLC
+  LDA temp_hitbox+Box::x2
+  CMP hitbox_x1
+  BCS :+
+  LDA #$00
+  RTS
+:
+
+  CLC
+  LDA hitbox_y2
+  CMP temp_hitbox+Box::y1
+  BCS :+
+  LDA #$00
+  RTS
+:
+
+  CLC
+  LDA temp_hitbox+Box::y2
+  CMP hitbox_y1
+  BCS :+
+  LDA #$00
+  RTS
+:
+  LDA #$01
   RTS
 .endproc
 
