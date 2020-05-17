@@ -6,7 +6,7 @@ ${PROJECT}.nes: src/${PROJECT}.o src/reset.o src/readjoy.o src/rand.o src/unrle.
 	ld65 $^ -t nes -o ${PROJECT}.nes ${LD65_FLAGS}
 
 debug: LD65_FLAGS += -Ln labels.txt --dbgfile ${PROJECT}.nes.dbg
-debug: CA65_FLAGS += -g
+debug: CA65_FLAGS += -g -DDEBUG=1
 debug: ${PROJECT}.nes
 
 src/${PROJECT}.o: src/${PROJECT}.s $(shell find assets -type f) # assets/music/*

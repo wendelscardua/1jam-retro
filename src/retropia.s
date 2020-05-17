@@ -18,6 +18,22 @@ FT_DPCM_OFF= $c000
 
 ; SFX_SOME_SFX = 0
 
+; debug - macros for NintendulatorDX interaction
+.ifdef DEBUG
+.macro debugOut str
+    .local over
+    sta $4040
+    jmp over
+        .byte str, 0
+    over:
+.endmacro
+
+.define fHex8( addr ) 1, 0, <(addr), >(addr)
+.define fDec8( addr ) 1, 1, <(addr), >(addr)
+.define fHex16( addr ) 1, 2, <(addr), >(addr)
+.define fDec16( addr ) 1, 3, <(addr), >(addr)
+.endif
+
 ; workhouse keeper constants
 .enum wk_symbols
   padding = $2D ; "-"
