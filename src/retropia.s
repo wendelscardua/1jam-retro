@@ -360,9 +360,8 @@ vblankwait:       ; wait for another vblank before continuing
   ; TODO: change to title screen when available
   LDA #game_states::main_playing
   STA game_state
-  LDA #0
-  STA current_level
   LDA #1
+  STA current_level
   STA num_objects
   LDA #$80
   STA objects+Object::xcoord
@@ -2953,15 +2952,17 @@ string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
 
 levels_l:
-        .byte <level_0_data
+        .byte $00 ; padding
+        .byte <level_1_data
 levels_h:
-        .byte >level_0_data
+        .byte $00 ; padding
+        .byte >level_1_data
 
         ; level data format:
         ; pointer to rle bg nametable
-level_0_data:
+        ; index of level exits (up,down,left,right)
+level_1_data:
         .word nametable_screen_grass_oooo
-
 
 
 wk_levels:
