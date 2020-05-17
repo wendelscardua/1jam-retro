@@ -103,6 +103,28 @@ oam_sprites:
   right_sprite_2 .word
 .endstruct
 
+.enum object_type
+  player
+.endenum
+
+.enum direction
+  up
+  down
+  left
+  right
+.endenum
+
+MAX_OBJECTS=10
+.struct Object ; used as struct of arrays
+  type            .res 10 ; enum object_type
+  xcoord          .res 10
+  ycoord          .res 10
+  anim_data_ptr_l .res 10 ; pointer to AnimData
+  anim_data_ptr_h .res 10 ; pointer to AnimData
+  direction       .res 10 ; enum direction
+  sprite_toggle   .res 10 ; which of the 2 available metasprites to use
+.endstruct
+
 .importzp rng_seed
 .importzp buttons
 .importzp last_frame_buttons
@@ -127,6 +149,8 @@ temp_a: .res 1
 temp_b: .res 1
 temp_x: .res 1
 temp_y: .res 1
+num_objects: .res 1
+objects: .tag Object
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -338,6 +362,21 @@ vblankwait:       ; wait for another vblank before continuing
   STA game_state
   LDA #0
   STA current_level
+  LDA #1
+  STA num_objects
+  LDA #$80
+  STA objects+Object::xcoord
+  STA objects+Object::ycoord
+  LDA #object_type::player
+  STA objects+Object::type
+  LDA #direction::down
+  STA objects+Object::direction
+  LDA #<player_anim_data
+  STA objects+Object::anim_data_ptr_l
+  LDA #>player_anim_data
+  STA objects+Object::anim_data_ptr_h
+  LDA #$00
+  STA objects+Object::sprite_toggle
   JSR load_level
 
 forever:
@@ -570,6 +609,86 @@ exit:
 
 .proc main_playing
   JSR player_input
+
+  LDA buttons
+  AND #BUTTON_UP
+  BEQ :+
+  DEC objects+Object::ycoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::up
+  STA objects+Object::direction
+:
+  LDA buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+  INC objects+Object::ycoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::down
+  STA objects+Object::direction
+:
+  LDA buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+  DEC objects+Object::xcoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::left
+  STA objects+Object::direction
+:
+  LDA buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+  INC objects+Object::xcoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::right
+  STA objects+Object::direction
+:
+
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+  LDX num_objects
+  DEX
+
+draw_elements_loop:
+  ; first we get the pointer to anim_data stuff
+  LDA objects+Object::anim_data_ptr_l, X
+  STA addr_ptr
+  LDA objects+Object::anim_data_ptr_h, X
+  STA addr_ptr+1
+  ; then we find the right index to metasprite inside anim_data
+  ; Y = 4 (hitbox) + 4 * direction + 2 * sprite_toggle_relevant_bit
+  CLC
+  LDA objects+Object::sprite_toggle, X
+  AND #%1000 ; toggle sprite every 8 frames
+  LSR
+  LSR
+  .repeat 4
+  ADC objects+Object::direction, X
+  .endrepeat
+  ADC #4
+  TAY
+
+  LDA (addr_ptr),Y
+  PHA
+  INY
+  LDA (addr_ptr),Y
+  STA addr_ptr+1
+  PLA
+  STA addr_ptr
+
+  LDA objects+Object::xcoord, X
+  STA temp_x
+  LDA objects+Object::ycoord, X
+  STA temp_y
+  TXA
+  PHA
+  JSR display_metasprite
+  PLA
+  TAX
+  DEX
+  BPL draw_elements_loop
+
   RTS
 .endproc
 
@@ -2715,7 +2834,7 @@ return:
 .proc display_metasprite
   ; input: (addr_ptr) = metasprite pointer
   ;        temp_x and temp_y = screen position for metasprite origin
-
+  ; cobbles X, Y
   LDY #0
   LDX sprite_counter
 loop:
@@ -2820,9 +2939,7 @@ rr_barrier_sprite = metasprite_7_data
 rr_tree_sprite = metasprite_8_data
 rr_flag_sprite = metasprite_9_data
 
-anim_stuff:
-        .word player_anim_data
-
+; data fitting AnimData struct
 player_anim_data:
         .byte $00, $00, $0F, $0F ; hitbox
         .word metasprite_10_data, metasprite_11_data ; walking up
