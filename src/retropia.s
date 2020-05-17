@@ -118,8 +118,6 @@ MAX_OBJECTS=10
   type            .res 10 ; enum object_type
   xcoord          .res 10
   ycoord          .res 10
-  anim_data_ptr_l .res 10 ; pointer to AnimData
-  anim_data_ptr_h .res 10 ; pointer to AnimData
   direction       .res 10 ; enum direction
   sprite_toggle   .res 10 ; which of the 2 available metasprites to use
 .endstruct
@@ -369,10 +367,6 @@ vblankwait:       ; wait for another vblank before continuing
   STA objects+Object::type
   LDA #direction::down
   STA objects+Object::direction
-  LDA #<player_anim_data
-  STA objects+Object::anim_data_ptr_l
-  LDA #>player_anim_data
-  STA objects+Object::anim_data_ptr_h
   LDA #$00
   STA objects+Object::sprite_toggle
   JSR load_level
@@ -649,10 +643,14 @@ exit:
   DEX
 
 draw_elements_loop:
+  ; Save X
+  TXA
+  PHA
   ; first we get the pointer to anim_data stuff
-  LDA objects+Object::anim_data_ptr_l, X
+  LDY objects+Object::type, X
+  LDA anim_data_ptr_l, Y
   STA addr_ptr
-  LDA objects+Object::anim_data_ptr_h, X
+  LDA anim_data_ptr_h, Y
   STA addr_ptr+1
   ; then we find the right index to metasprite inside anim_data
   ; Y = 4 * direction + 2 * sprite_toggle_relevant_bit
@@ -678,9 +676,8 @@ draw_elements_loop:
   STA temp_x
   LDA objects+Object::ycoord, X
   STA temp_y
-  TXA
-  PHA
   JSR display_metasprite
+  ; restore X
   PLA
   TAX
   DEX
@@ -2942,6 +2939,11 @@ player_anim_data:
         .word metasprite_12_data, metasprite_13_data ; walking down
         .word metasprite_14_data, metasprite_15_data ; walking left
         .word metasprite_16_data, metasprite_17_data ; walking right
+
+anim_data_ptr_l:
+        .byte <player_anim_data
+anim_data_ptr_h:
+        .byte >player_anim_data
 
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
