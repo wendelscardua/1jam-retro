@@ -163,6 +163,7 @@ game_state: .res 1
 current_nametable: .res 1
 current_level: .res 1
 current_exits: .res 4 ; up, down, left, right
+next_screen_direction: .res 1
 current_sub_level: .res 1
 frame_counter: .res 1
 sprite_counter: .res 1
@@ -170,13 +171,19 @@ temp_a: .res 1
 temp_b: .res 1
 temp_x: .res 1
 temp_y: .res 1
-temp_hitbox: .tag Box
+temp_hitbox_a: .tag Box
+temp_hitbox_b: .tag Box
 num_objects: .res 1
 objects: .tag Object
 
 .segment "BSS"
 ; non-zp RAM goes here
 gamekid_ram: .res $100
+wall_x1: .res $10
+wall_y1: .res $10
+wall_x2: .res $10
+wall_y2: .res $10
+num_walls: .res 1
 
 .struct wk_var
   table .res 9*16
@@ -427,6 +434,18 @@ etc:
   RTS
 .endproc
 
+.macro add_wall x1, y1, x2, y2
+  LDA x1
+  STA wall_x1, X
+  LDA y1
+  STA wall_y1, X
+  LDA x2
+  STA wall_x2, X
+  LDA y2
+  STA wall_y2, X
+  INX
+.endmacro
+
 .proc load_level
   ; loads current level for main game
   LDX current_level
@@ -445,28 +464,63 @@ etc:
   INY
   STA rle_ptr+1
 
-  ; load exits
+  ; load exits / create outer walls
+  LDX #$00
+  
   LDA (addr_ptr),Y
   INY
   STA current_exits+Exit::up
-
+  BEQ closed_up
+opened_up:
+  add_wall #$00, #$00, #$4F, #$0F
+  add_wall #$B0, #$00, #$FF, #$0F
+  JMP :+
+closed_up:
+  add_wall #$00, #$00, #$FF, #$0F
+:
   LDA (addr_ptr),Y
   INY
   STA current_exits+Exit::down
-
+  BEQ closed_down
+opened_down:
+  add_wall #$00, #$E0, #$4F, #$EF
+  add_wall #$B0, #$E0, #$FF, #$EF
+  JMP :+
+closed_down:
+  add_wall #$00, #$E0, #$FF, #$EF
+:
   LDA (addr_ptr),Y
   INY
   STA current_exits+Exit::left
-
+  BEQ closed_left
+opened_left:
+  add_wall #$00, #$00, #$0F, #$3F
+  add_wall #$00, #$B0, #$0F, #$EF
+  JMP :+
+closed_left:
+  add_wall #$00, #$00, #$0F, #$EF
+:
   LDA (addr_ptr),Y
   INY
   STA current_exits+Exit::right
+  BEQ closed_right
+opened_right:
+  add_wall #$F0, #$00, #$FF, #$3F
+  add_wall #$F0, #$B0, #$FF, #$EF
+  JMP :+
+closed_right:
+  add_wall #$F0, #$00, #$FF, #$EF
+:
+
+  STX num_walls
+
 
   LDA #<palettes
   STA palette_ptr
   LDA #>palettes
   STA palette_ptr+1
   JSR load_nametable
+  
   RTS
 .endproc
 
@@ -646,7 +700,7 @@ exit:
 .endproc
 
 .proc load_next_screen
-  LDX objects+Object::direction
+  LDX next_screen_direction
   CPX #direction::up
   BEQ wrap_up
   CPX #direction::down
@@ -683,6 +737,51 @@ load:
   RTS
 .endproc
 
+.proc check_wall_collision
+  ; returns 1 in A if player hitbox intersect with any wall
+  CLC
+  LDA hitbox_x1
+  ADC objects+Object::xcoord
+  STA temp_hitbox_a+Box::x1
+  CLC
+  LDA hitbox_y1
+  ADC objects+Object::ycoord
+  STA temp_hitbox_a+Box::y1
+  CLC
+  LDA hitbox_x2
+  ADC objects+Object::xcoord
+  STA temp_hitbox_a+Box::x2
+  CLC
+  LDA hitbox_y2
+  ADC objects+Object::ycoord
+  STA temp_hitbox_a+Box::y2
+  
+  LDX num_walls
+  DEX
+loop:
+  LDA wall_x1, X
+  STA temp_hitbox_b+Box::x1
+  LDA wall_y1, X
+  STA temp_hitbox_b+Box::y1
+  LDA wall_x2, X
+  STA temp_hitbox_b+Box::x2
+  LDA wall_y2, X
+  STA temp_hitbox_b+Box::y2
+  JSR temp_hitbox_collision
+  BEQ next
+  .ifdef DEBUG
+  STX temp_b
+  debugOut {"Collision, wall index = ", fDec8{temp_b}}
+  LDA #1
+  .endif
+  RTS ; A = 1
+next:
+  DEX
+  BPL loop
+  LDA #$00
+  RTS
+.endproc
+
 .proc main_playing
   JSR player_input
 
@@ -691,12 +790,17 @@ load:
   BEQ :+
   LDA objects+Object::ycoord
   BNE move_up
+  LDA #direction::up
+  STA next_screen_direction
   JSR load_next_screen
 move_up:
   DEC objects+Object::ycoord
   INC objects+Object::sprite_toggle
   LDA #direction::up
   STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  INC objects+Object::ycoord ; undo move
 :
   LDA buttons
   AND #BUTTON_DOWN
@@ -704,24 +808,34 @@ move_up:
   LDA objects+Object::ycoord
   CMP #$E0
   BNE move_down
+  LDA #direction::down
+  STA next_screen_direction
   JSR load_next_screen
 move_down:
   INC objects+Object::ycoord
   INC objects+Object::sprite_toggle
   LDA #direction::down
   STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  DEC objects+Object::ycoord ; undo move
 :
   LDA buttons
   AND #BUTTON_LEFT
   BEQ :+
   LDA objects+Object::xcoord
   BNE move_left
+  LDA #direction::left
+  STA next_screen_direction
   JSR load_next_screen
 move_left:
   DEC objects+Object::xcoord
   INC objects+Object::sprite_toggle
   LDA #direction::left
   STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  INC objects+Object::xcoord ; undo move
 :
   LDA buttons
   AND #BUTTON_RIGHT
@@ -729,12 +843,17 @@ move_left:
   LDA objects+Object::xcoord
   CMP #$F0
   BNE move_right
+  LDA #direction::right
+  STA next_screen_direction
   JSR load_next_screen
 move_right:
   INC objects+Object::xcoord
   INC objects+Object::sprite_toggle
   LDA #direction::right
   STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  DEC objects+Object::xcoord ; undo move
 :
 
   ; draw elements
@@ -788,7 +907,7 @@ draw_elements_loop:
 .endproc
 
 .proc temp_hitbox_collision
-  ; returns 1 in A if player hitbox and temp_hitbox intersect
+  ; returns 1 in A if temp_hitbox_a and temp_hitbox_b intersect
   ; Pseudo-code:
   ;  ((a.x1,a.y1),(a.x2,a.y2)) and ((b.x1,b.y1),(b.x2,b.y2))
   ;
@@ -799,31 +918,31 @@ draw_elements_loop:
   ;
   ;  Also: foo < bar ==> foo; CMP bar; carry is clear
   CLC
-  LDA hitbox_x2
-  CMP temp_hitbox+Box::x1
+  LDA temp_hitbox_a+Box::x2
+  CMP temp_hitbox_b+Box::x1
   BCS :+
   LDA #$00
   RTS
 :
   CLC
-  LDA temp_hitbox+Box::x2
-  CMP hitbox_x1
-  BCS :+
-  LDA #$00
-  RTS
-:
-
-  CLC
-  LDA hitbox_y2
-  CMP temp_hitbox+Box::y1
+  LDA temp_hitbox_b+Box::x2
+  CMP temp_hitbox_a+Box::x1
   BCS :+
   LDA #$00
   RTS
 :
 
   CLC
-  LDA temp_hitbox+Box::y2
-  CMP hitbox_y1
+  LDA temp_hitbox_a+Box::y2
+  CMP temp_hitbox_b+Box::y1
+  BCS :+
+  LDA #$00
+  RTS
+:
+
+  CLC
+  LDA temp_hitbox_b+Box::y2
+  CMP temp_hitbox_a+Box::y1
   BCS :+
   LDA #$00
   RTS
@@ -3094,11 +3213,11 @@ anim_data_ptr_h:
 
 ; indexed by object type
 hitbox_x1:
-        .byte $05
+        .byte $03
 hitbox_y1:
         .byte $00
 hitbox_x2:
-        .byte $0A
+        .byte $0C
 hitbox_y2:
         .byte $0F
 
