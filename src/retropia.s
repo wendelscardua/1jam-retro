@@ -113,6 +113,13 @@ oam_sprites:
   right
 .endenum
 
+.struct Exit
+  up    .byte
+  down  .byte
+  left  .byte
+  right .byte
+.endstruct
+
 MAX_OBJECTS=10
 .struct Object ; used as struct of arrays
   type            .res 10 ; enum object_type
@@ -139,6 +146,7 @@ args: .res 5
 game_state: .res 1
 current_nametable: .res 1
 current_level: .res 1
+current_exits: .res 4 ; up, down, left, right
 current_sub_level: .res 1
 frame_counter: .res 1
 sprite_counter: .res 1
@@ -409,13 +417,34 @@ etc:
   STA addr_ptr
   LDA levels_h, X
   STA addr_ptr+1
+
   LDY #0
+
+  ; load nametable pointer
   LDA (addr_ptr),Y
   INY
   STA rle_ptr
   LDA (addr_ptr),Y
   INY
   STA rle_ptr+1
+
+  ; load exits
+  LDA (addr_ptr),Y
+  INY
+  STA current_exits+Exit::up
+
+  LDA (addr_ptr),Y
+  INY
+  STA current_exits+Exit::down
+
+  LDA (addr_ptr),Y
+  INY
+  STA current_exits+Exit::left
+
+  LDA (addr_ptr),Y
+  INY
+  STA current_exits+Exit::right
+
   LDA #<palettes
   STA palette_ptr
   LDA #>palettes
@@ -599,12 +628,54 @@ exit:
   RTS
 .endproc
 
+.proc load_next_screen
+  LDX objects+Object::direction
+  CPX #direction::up
+  BEQ wrap_up
+  CPX #direction::down
+  BEQ wrap_down
+  CPX #direction::left
+  BEQ wrap_left
+  CPX #direction::right
+  BEQ wrap_right
+  KIL ; never happens (?)
+wrap_up:
+  LDA #$E0
+  STA objects+Object::ycoord
+  JMP load
+wrap_down:
+  LDA #$00
+  STA objects+Object::ycoord
+  JMP load
+wrap_left:
+  LDA #$F0
+  STA objects+Object::xcoord
+  JMP load
+wrap_right:
+  LDA #$00
+  STA objects+Object::xcoord
+  JMP load
+
+load:
+  LDA current_exits, X
+  BNE :+
+  KIL ; should never try to load zeroth level
+:
+  STA current_level
+  JSR load_level
+  RTS
+.endproc
+
 .proc main_playing
   JSR player_input
 
   LDA buttons
   AND #BUTTON_UP
   BEQ :+
+  LDA objects+Object::ycoord
+  BNE move_up
+  JSR load_next_screen
+move_up:
   DEC objects+Object::ycoord
   INC objects+Object::sprite_toggle
   LDA #direction::up
@@ -613,6 +684,11 @@ exit:
   LDA buttons
   AND #BUTTON_DOWN
   BEQ :+
+  LDA objects+Object::ycoord
+  CMP #$E0
+  BNE move_down
+  JSR load_next_screen
+move_down:
   INC objects+Object::ycoord
   INC objects+Object::sprite_toggle
   LDA #direction::down
@@ -621,6 +697,10 @@ exit:
   LDA buttons
   AND #BUTTON_LEFT
   BEQ :+
+  LDA objects+Object::xcoord
+  BNE move_left
+  JSR load_next_screen
+move_left:
   DEC objects+Object::xcoord
   INC objects+Object::sprite_toggle
   LDA #direction::left
@@ -629,12 +709,16 @@ exit:
   LDA buttons
   AND #BUTTON_RIGHT
   BEQ :+
+  LDA objects+Object::xcoord
+  CMP #$F0
+  BNE move_right
+  JSR load_next_screen
+move_right:
   INC objects+Object::xcoord
   INC objects+Object::sprite_toggle
   LDA #direction::right
   STA objects+Object::direction
 :
-
 
   ; draw elements
   LDA #0
@@ -2940,10 +3024,22 @@ player_anim_data:
         .word metasprite_14_data, metasprite_15_data ; walking left
         .word metasprite_16_data, metasprite_17_data ; walking right
 
+; indexed by object type
 anim_data_ptr_l:
         .byte <player_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
+
+; indexed by object type
+hitbox_x1:
+        .byte $05
+hitbox_y1:
+        .byte $00
+hitbox_x2:
+        .byte $0A
+hitbox_y2:
+        .byte $0F
+
 
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
