@@ -9,7 +9,7 @@ debug: LD65_FLAGS += -Ln labels.txt --dbgfile ${PROJECT}.nes.dbg
 debug: CA65_FLAGS += -g
 debug: ${PROJECT}.nes
 
-src/${PROJECT}.o: src/${PROJECT}.s assets/* assets/level/* # assets/music/*
+src/${PROJECT}.o: src/${PROJECT}.s $(shell find assets -type f) * # assets/music/*
 	ca65 src/${PROJECT}.s ${CA65_FLAGS}
 
 %.o: %.s

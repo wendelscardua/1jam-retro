@@ -2960,7 +2960,7 @@ levels_h:
         ; level data format:
         ; pointer to rle bg nametable
 level_0_data:
-        .word nametable_level_0
+        .word nametable_screen_grass_oooo
 
 
 
@@ -3054,12 +3054,13 @@ rr_barrier_transitions:
         .byte %00001 ; from 11110
         .byte %00000 ; from 11111 (victory flag)
 
-nametable_level_0: .incbin "../assets/level/level-0.rle"
-nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
-nametable_wk_title: .incbin "../assets/wk-level/title.rle"
-nametable_gi_title: .incbin "../assets/gi-level/title.rle"
-nametable_mf_title: .incbin "../assets/mf-level/title.rle"
-nametable_rr_title: .incbin "../assets/rr-level/title.rle"
+nametable_screen_grass_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
+
+nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
+nametable_wk_title: .incbin "../assets/nametables/gamekid-titles/wk.rle"
+nametable_gi_title: .incbin "../assets/nametables/gamekid-titles/gi.rle"
+nametable_mf_title: .incbin "../assets/nametables/gamekid-titles/mf.rle"
+nametable_rr_title: .incbin "../assets/nametables/gamekid-titles/rr.rle"
 
 subgame_by_game_state:
         .byte $00 ; main
