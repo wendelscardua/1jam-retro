@@ -468,7 +468,6 @@ etc:
   LDX #$00
   
   LDA (addr_ptr),Y
-  INY
   STA current_exits+Exit::up
   BEQ closed_up
 opened_up:
@@ -478,8 +477,8 @@ opened_up:
 closed_up:
   add_wall #$00, #$00, #$FF, #$0F
 :
-  LDA (addr_ptr),Y
   INY
+  LDA (addr_ptr),Y
   STA current_exits+Exit::down
   BEQ closed_down
 opened_down:
@@ -489,8 +488,8 @@ opened_down:
 closed_down:
   add_wall #$00, #$E0, #$FF, #$EF
 :
-  LDA (addr_ptr),Y
   INY
+  LDA (addr_ptr),Y
   STA current_exits+Exit::left
   BEQ closed_left
 opened_left:
@@ -500,8 +499,8 @@ opened_left:
 closed_left:
   add_wall #$00, #$00, #$0F, #$EF
 :
-  LDA (addr_ptr),Y
   INY
+  LDA (addr_ptr),Y
   STA current_exits+Exit::right
   BEQ closed_right
 opened_right:
@@ -511,6 +510,7 @@ opened_right:
 closed_right:
   add_wall #$F0, #$00, #$FF, #$EF
 :
+  INY
 
   STX num_walls
 
