@@ -120,6 +120,7 @@ oam_sprites:
 
 .enum object_type
   player
+  enemy_vrissy
 .endenum
 
 .enum direction
@@ -513,7 +514,6 @@ closed_right:
   INY
 
   STX num_walls
-
 
   LDA #<palettes
   STA palette_ptr
@@ -3207,21 +3207,30 @@ player_anim_data:
         .word metasprite_14_data, metasprite_15_data ; walking left
         .word metasprite_16_data, metasprite_17_data ; walking right
 
+enemy_vrissy_anim_data:
+        .word metasprite_18_data, metasprite_19_data ; walking up
+        .word metasprite_20_data, metasprite_21_data ; walking down
+        .word metasprite_22_data, metasprite_23_data ; walking left
+        .word metasprite_23_data, metasprite_24_data ; walking right
+
 ; indexed by object type
 anim_data_ptr_l:
         .byte <player_anim_data
+        .byte <enemy_vrissy_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
+        .byte >enemy_vrissy_anim_data
 
 ; indexed by object type
+;              pl, vr
 hitbox_x1:
-        .byte $03
+        .byte $03, $02
 hitbox_y1:
-        .byte $00
+        .byte $00, $02
 hitbox_x2:
-        .byte $0C
+        .byte $0C, $0D
 hitbox_y2:
-        .byte $0F
+        .byte $0F, $0D
 
 
 strings:
