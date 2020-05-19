@@ -471,44 +471,44 @@ etc:
   STA current_exits+Exit::up
   BEQ closed_up
 opened_up:
-  add_wall #$00, #$00, #$4F, #$0F
-  add_wall #$B0, #$00, #$FF, #$0F
+  add_wall #$00, #$00, #$57, #$17
+  add_wall #$A8, #$00, #$FF, #$17
   JMP :+
 closed_up:
-  add_wall #$00, #$00, #$FF, #$0F
+  add_wall #$00, #$00, #$FF, #$17
 :
   INY
   LDA (addr_ptr),Y
   STA current_exits+Exit::down
   BEQ closed_down
 opened_down:
-  add_wall #$00, #$E0, #$4F, #$EF
-  add_wall #$B0, #$E0, #$FF, #$EF
+  add_wall #$00, #$D8, #$57, #$EF
+  add_wall #$A8, #$D8, #$FF, #$EF
   JMP :+
 closed_down:
-  add_wall #$00, #$E0, #$FF, #$EF
+  add_wall #$00, #$D8, #$FF, #$EF
 :
   INY
   LDA (addr_ptr),Y
   STA current_exits+Exit::left
   BEQ closed_left
 opened_left:
-  add_wall #$00, #$00, #$0F, #$3F
-  add_wall #$00, #$B0, #$0F, #$EF
+  add_wall #$00, #$00, #$17, #$47
+  add_wall #$00, #$A8, #$17, #$EF
   JMP :+
 closed_left:
-  add_wall #$00, #$00, #$0F, #$EF
+  add_wall #$00, #$00, #$17, #$EF
 :
   INY
   LDA (addr_ptr),Y
   STA current_exits+Exit::right
   BEQ closed_right
 opened_right:
-  add_wall #$F0, #$00, #$FF, #$3F
-  add_wall #$F0, #$B0, #$FF, #$EF
+  add_wall #$E8, #$00, #$FF, #$47
+  add_wall #$E8, #$A8, #$FF, #$EF
   JMP :+
 closed_right:
-  add_wall #$F0, #$00, #$FF, #$EF
+  add_wall #$E8, #$00, #$FF, #$EF
 :
   INY
 
@@ -520,7 +520,9 @@ closed_right:
   LDA #>palettes
   STA palette_ptr+1
   JSR load_nametable
-  
+  LDA #$00
+  STA PPUSCROLL
+  STA PPUSCROLL
   RTS
 .endproc
 
