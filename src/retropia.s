@@ -3256,21 +3256,29 @@ levels_h:
         ; level data format:
         ; pointer to rle bg nametable
         ; index of level exits (up,down,left,right)
+        ; array of:
+        ;   [object type] [x] [y] [direction] [*opts]
+        ;   (ends with object type == 0)
 level_1_data:
         .word nametable_screen_grass_oooo
         .byte $02, $03, $04, $05
+        .byte $00
 level_2_data:
         .word nametable_screen_grass_cocc
         .byte $00, $01, $00, $00
+        .byte $00
 level_3_data:
         .word nametable_screen_grass_occc
         .byte $01, $00, $00, $00
+        .byte $00
 level_4_data:
         .word nametable_screen_grass_ccco
         .byte $00, $00, $00, $01
+        .byte $00
 level_5_data:
         .word nametable_screen_grass_ccoc
         .byte $00, $00, $01, $00
+        .byte $00
 
 wk_levels:
         .word wk_level_1_data
