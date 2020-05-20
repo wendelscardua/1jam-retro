@@ -513,7 +513,55 @@ closed_right:
 :
   INY
 
+screen_walls_loop:
+  LDA (addr_ptr), Y
+  BEQ end_of_screen_walls
+  STA wall_x1, X
+  INY
+  LDA (addr_ptr), Y
+  STA wall_y1, X
+  INY
+  LDA (addr_ptr), Y
+  STA wall_x2, X
+  INY
+  LDA (addr_ptr), Y
+  STA wall_y2, X
+  INY
+
+  INX
+  JMP screen_walls_loop
+end_of_screen_walls:
+  INY
   STX num_walls
+
+  LDX #1
+objects_loop:
+  LDA (addr_ptr), Y
+  BEQ end_of_objects_loop
+  STA objects+Object::type, X
+  INY
+
+  LDA (addr_ptr), Y
+  BEQ end_of_objects_loop
+  STA objects+Object::xcoord, X
+  INY
+
+  LDA (addr_ptr), Y
+  BEQ end_of_objects_loop
+  STA objects+Object::ycoord, X
+  INY
+
+  LDA (addr_ptr), Y
+  BEQ end_of_objects_loop
+  STA objects+Object::direction, X
+  INY
+
+  INX
+  JMP objects_loop
+end_of_objects_loop:
+  INY
+
+  STX num_objects
 
   LDA #<palettes
   STA palette_ptr
@@ -3275,64 +3323,70 @@ screens_h:
         ; pointer to rle bg nametable
         ; index of screen exits (up,down,left,right)
         ; array of:
+        ;   [wall x1] [y1] [x2] [y2]
+        ;   (ends with x1 == 0)
+        ; array of:
         ;   [object type] [x] [y] [direction] [*opts]
         ;   (ends with object type == 0)
 screen_1_data:
-        .word nametable_screen_grass_oooo
+        .word nametable_screen_1
         .byte $0C, $06, $04, $02
-        .byte $00
+        .byte $00, $00
 screen_2_data:
-        .word nametable_screen_todo
+        .word nametable_screen_2
         .byte $00, $00, $01, $03
-        .byte $00
+        .byte $48, $38, $77, $77
+        .byte $88, $78, $B7, $B7
+        .byte $00 ; end of walls
+        .byte $00 ; end of objects
 screen_3_data:
         .word nametable_screen_todo
         .byte $00, $00, $02, $00
-        .byte $00
+        .byte $00, $00
 screen_4_data:
         .word nametable_screen_todo
         .byte $00, $00, $05, $01
-        .byte $00
+        .byte $00, $00
 screen_5_data:
         .word nametable_screen_todo
         .byte $00, $00, $00, $04
-        .byte $00
+        .byte $00, $00
 screen_6_data:
         .word nametable_screen_todo
         .byte $01, $07, $00, $00
-        .byte $00
+        .byte $00, $00
 screen_7_data:
         .word nametable_screen_todo
         .byte $06, $00, $0A, $08
-        .byte $00
+        .byte $00, $00
 screen_8_data:
         .word nametable_screen_todo
         .byte $00, $00, $07, $09
-        .byte $00
+        .byte $00, $00
 screen_9_data:
         .word nametable_screen_todo
         .byte $00, $00, $08, $00
-        .byte $00
+        .byte $00, $00
 screen_A_data:
         .word nametable_screen_todo
         .byte $00, $00, $0B, $07
-        .byte $00
+        .byte $00, $00
 screen_B_data:
         .word nametable_screen_todo
         .byte $00, $00, $00, $0A
-        .byte $00
+        .byte $00, $00
 screen_C_data:
         .word nametable_screen_todo
         .byte $0D, $01, $00, $03
-        .byte $00
+        .byte $00, $00
 screen_D_data:
         .word nametable_screen_todo
         .byte $0E, $0C, $00, $00
-        .byte $00
+        .byte $00, $00
 screen_E_data:
         .word nametable_screen_todo
         .byte $00, $0D, $00, $00
-        .byte $00
+        .byte $00, $00
 
 wk_levels:
         .word wk_level_1_data
@@ -3424,7 +3478,8 @@ rr_barrier_transitions:
         .byte %00001 ; from 11110
         .byte %00000 ; from 11111 (victory flag)
 
-nametable_screen_grass_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
+nametable_screen_1: .incbin "../assets/nametables/screens/screen-1.rle"
+nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
 nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
 nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
