@@ -162,7 +162,7 @@ old_nmis: .res 1
 args: .res 5
 game_state: .res 1
 current_nametable: .res 1
-current_level: .res 1
+current_screen: .res 1
 current_exits: .res 4 ; up, down, left, right
 next_screen_direction: .res 1
 current_sub_level: .res 1
@@ -391,7 +391,7 @@ vblankwait:       ; wait for another vblank before continuing
   LDA #game_states::main_playing
   STA game_state
   LDA #1
-  STA current_level
+  STA current_screen
   STA num_objects
   LDA #$80
   STA objects+Object::xcoord
@@ -402,7 +402,7 @@ vblankwait:       ; wait for another vblank before continuing
   STA objects+Object::direction
   LDA #$00
   STA objects+Object::sprite_toggle
-  JSR load_level
+  JSR load_screen
 
 forever:
   LDA nmis
@@ -447,12 +447,12 @@ etc:
   INX
 .endmacro
 
-.proc load_level
-  ; loads current level for main game
-  LDX current_level
-  LDA levels_l, X
+.proc load_screen
+  ; loads current screen for main game
+  LDX current_screen
+  LDA screens_l, X
   STA addr_ptr
-  LDA levels_h, X
+  LDA screens_h, X
   STA addr_ptr+1
 
   LDY #0
@@ -467,7 +467,7 @@ etc:
 
   ; load exits / create outer walls
   LDX #$00
-  
+
   LDA (addr_ptr),Y
   STA current_exits+Exit::up
   BEQ closed_up
@@ -734,8 +734,8 @@ load:
   BNE :+
   KIL ; should never try to load zeroth level
 :
-  STA current_level
-  JSR load_level
+  STA current_screen
+  JSR load_screen
   RTS
 .endproc
 
@@ -757,7 +757,7 @@ load:
   LDA hitbox_y2
   ADC objects+Object::ycoord
   STA temp_hitbox_a+Box::y2
-  
+
   LDX num_walls
   DEX
 loop:
@@ -3238,46 +3238,100 @@ string_game_over: .byte "GAME", $5B, "OVER", $00
 string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
 
-levels_l:
+screens_l:
         .byte $00 ; padding
-        .byte <level_1_data
-        .byte <level_2_data
-        .byte <level_3_data
-        .byte <level_4_data
-        .byte <level_5_data
-levels_h:
+        .byte <screen_1_data
+        .byte <screen_2_data
+        .byte <screen_3_data
+        .byte <screen_4_data
+        .byte <screen_5_data
+        .byte <screen_6_data
+        .byte <screen_7_data
+        .byte <screen_8_data
+        .byte <screen_9_data
+        .byte <screen_A_data
+        .byte <screen_B_data
+        .byte <screen_C_data
+        .byte <screen_D_data
+        .byte <screen_E_data
+screens_h:
         .byte $00 ; padding
-        .byte >level_1_data
-        .byte >level_2_data
-        .byte >level_3_data
-        .byte >level_4_data
-        .byte >level_5_data
+        .byte >screen_1_data
+        .byte >screen_2_data
+        .byte >screen_3_data
+        .byte >screen_4_data
+        .byte >screen_5_data
+        .byte >screen_6_data
+        .byte >screen_7_data
+        .byte >screen_8_data
+        .byte >screen_9_data
+        .byte >screen_A_data
+        .byte >screen_B_data
+        .byte >screen_C_data
+        .byte >screen_D_data
+        .byte >screen_E_data
 
-        ; level data format:
+        ; screen data format:
         ; pointer to rle bg nametable
-        ; index of level exits (up,down,left,right)
+        ; index of screen exits (up,down,left,right)
         ; array of:
         ;   [object type] [x] [y] [direction] [*opts]
         ;   (ends with object type == 0)
-level_1_data:
+screen_1_data:
         .word nametable_screen_grass_oooo
-        .byte $02, $03, $04, $05
+        .byte $0C, $06, $04, $02
         .byte $00
-level_2_data:
-        .word nametable_screen_grass_cocc
-        .byte $00, $01, $00, $00
+screen_2_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $01, $03
         .byte $00
-level_3_data:
-        .word nametable_screen_grass_occc
-        .byte $01, $00, $00, $00
+screen_3_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $02, $00
         .byte $00
-level_4_data:
-        .word nametable_screen_grass_ccco
-        .byte $00, $00, $00, $01
+screen_4_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $05, $01
         .byte $00
-level_5_data:
-        .word nametable_screen_grass_ccoc
-        .byte $00, $00, $01, $00
+screen_5_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $00, $04
+        .byte $00
+screen_6_data:
+        .word nametable_screen_todo
+        .byte $01, $07, $00, $00
+        .byte $00
+screen_7_data:
+        .word nametable_screen_todo
+        .byte $06, $00, $0A, $08
+        .byte $00
+screen_8_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $07, $09
+        .byte $00
+screen_9_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $08, $00
+        .byte $00
+screen_A_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $0B, $07
+        .byte $00
+screen_B_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $00, $0A
+        .byte $00
+screen_C_data:
+        .word nametable_screen_todo
+        .byte $0D, $01, $00, $03
+        .byte $00
+screen_D_data:
+        .word nametable_screen_todo
+        .byte $0E, $0C, $00, $00
+        .byte $00
+screen_E_data:
+        .word nametable_screen_todo
+        .byte $00, $0D, $00, $00
         .byte $00
 
 wk_levels:
@@ -3371,10 +3425,7 @@ rr_barrier_transitions:
         .byte %00000 ; from 11111 (victory flag)
 
 nametable_screen_grass_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
-nametable_screen_grass_occc: .incbin "../assets/nametables/screens/grass-occc.rle"
-nametable_screen_grass_cocc: .incbin "../assets/nametables/screens/grass-cocc.rle"
-nametable_screen_grass_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
-nametable_screen_grass_ccco: .incbin "../assets/nametables/screens/grass-ccco.rle"
+nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
 nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
 nametable_wk_title: .incbin "../assets/nametables/gamekid-titles/wk.rle"
