@@ -145,7 +145,7 @@ MAX_OBJECTS=10
   direction       .res 10 ; enum direction
   sprite_toggle   .res 10 ; which of the 2 available metasprites to use
   rom_ptr_l       .res 10 ; up to object_type to implement meaning for these
-  rom_ptr_r       .res 10
+  rom_ptr_h       .res 10
   ram             .res 10
 .endstruct
 
@@ -568,7 +568,7 @@ objects_loop:
   INY
 
   LDA (addr_ptr), Y
-  STA objects+Object::rom_ptr_r, X
+  STA objects+Object::rom_ptr_h, X
   INY
 
   LDA #$00
@@ -924,6 +924,20 @@ move_right:
   DEC objects+Object::xcoord ; undo move
 :
 
+  ; update elements
+  LDX num_objects
+  DEX
+  BEQ skip_update_elements
+update_elements_loop:
+  LDA objects+Object::type, X
+  CMP #object_type::enemy_vrissy
+  BNE :+
+  JSR update_enemy_vrissy
+:
+  DEX
+  BNE update_elements_loop ; X = 0 is player object
+skip_update_elements:
+
   ; draw elements
   LDA #0
   STA sprite_counter
@@ -971,6 +985,64 @@ draw_elements_loop:
   DEX
   BPL draw_elements_loop
 
+  RTS
+.endproc
+
+.proc update_enemy_vrissy
+  INC objects+Object::sprite_toggle, X
+  ; load rom ptr and ram index
+  LDY objects+Object::ram, X
+  LDA objects+Object::rom_ptr_l, X
+  STA addr_ptr
+  LDA objects+Object::rom_ptr_h, X
+  STA addr_ptr+1
+
+  ; move
+  LDA objects+Object::direction, X
+  CMP #direction::up
+  BEQ move_up
+  CMP #direction::down
+  BEQ move_down
+  CMP #direction::left
+  BEQ move_left
+  CMP #direction::right
+  BEQ move_right
+  KIL
+move_up:
+  DEC objects+Object::ycoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::ycoord, X
+  BEQ update_direction
+  JMP return
+move_down:
+  INC objects+Object::ycoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::ycoord, X
+  BEQ update_direction
+  JMP return
+move_left:
+  DEC objects+Object::xcoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::xcoord, X
+  BEQ update_direction
+  JMP return
+move_right:
+  INC objects+Object::xcoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::xcoord, X
+  BEQ update_direction
+  JMP return
+update_direction:
+  INY
+  LDA (addr_ptr),Y
+  STA objects+Object::direction, X
+  INY
+  LDA (addr_ptr),Y
+  BNE :+
+  LDY #$00
+:
+  STY objects+Object::ram, X
+return:
   RTS
 .endproc
 
