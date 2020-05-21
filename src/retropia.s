@@ -47,6 +47,14 @@ FT_DPCM_OFF= $c000
 ; game config
 
 GAMEKID_DELAY = 60
+HAS_WK =      %00000001
+HAS_GI =      %00000010
+HAS_MF =      %00000100
+HAS_RR =      %00001000
+FINISHED_WK = %00010000
+FINISHED_GI = %00100000
+FINISHED_MF = %01000000
+FINISHED_RR = %10000000
 
 .segment "ZEROPAGE"
 FT_TEMP: .res 3
@@ -174,6 +182,7 @@ nmis: .res 1
 old_nmis: .res 1
 args: .res 5
 game_state: .res 1
+inventory: .res 1
 current_nametable: .res 1
 current_screen: .res 1
 current_exits: .res 4 ; up, down, left, right
@@ -417,6 +426,8 @@ vblankwait:       ; wait for another vblank before continuing
   STA objects+Object::direction
   LDA #$00
   STA objects+Object::sprite_toggle
+  LDA #$00
+  STA inventory
   JSR load_screen
 
 forever:
@@ -1068,13 +1079,34 @@ draw_elements_loop:
 @enemy_vrissy:
   KIL
   JMP return
+  ; TODO: the cartridge collisions should just add to inventory (maybe?)
 @cartridge_wk:
+  LDA inventory
+  ORA #HAS_WK
+  STA inventory
+  LDA #game_states::wk_booting_gamekid
+  STA game_state
   JMP return
 @cartridge_gi:
+  LDA inventory
+  ORA #HAS_GI
+  STA inventory
+  LDA #game_states::gi_booting_gamekid
+  STA game_state
   JMP return
 @cartridge_mf:
+  LDA inventory
+  ORA #HAS_MF
+  STA inventory
+  LDA #game_states::mf_booting_gamekid
+  STA game_state
   JMP return
 @cartridge_rr:
+  LDA inventory
+  ORA #HAS_RR
+  STA inventory
+  LDA #game_states::rr_booting_gamekid
+  STA game_state
   JMP return
 return:
   RTS
@@ -3552,7 +3584,22 @@ screens_h:
 screen_1_data:
         .word nametable_screen_1
         .byte $0C, $06, $04, $02
-        .byte $00, $00
+        .byte $00
+        .ifdef DEBUG
+        .byte object_type::cartridge_wk, $30, $30, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::cartridge_gi, $D0, $30, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::cartridge_mf, $30, $C0, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::cartridge_rr, $D0, $C0, direction::up
+        .word $0000
+        .byte $00
+        .endif
+        .byte $00
 screen_2_data:
         .word nametable_screen_2
         .byte $00, $00, $01, $03
