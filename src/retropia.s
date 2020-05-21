@@ -144,7 +144,16 @@ MAX_OBJECTS=10
   ycoord          .res 10
   direction       .res 10 ; enum direction
   sprite_toggle   .res 10 ; which of the 2 available metasprites to use
+  rom_ptr_l       .res 10 ; up to object_type to implement meaning for these
+  rom_ptr_r       .res 10
+  ram             .res 10
 .endstruct
+
+; object rom/ram definition per object_type:
+; - vrissy
+; rom: (target-x-or-y new-direction)+ (ends with a 0)
+;      - target type depends on current direction
+; ram: current rom index
 
 .importzp rng_seed
 .importzp buttons
@@ -547,14 +556,23 @@ objects_loop:
   INY
 
   LDA (addr_ptr), Y
-  BEQ end_of_objects_loop
   STA objects+Object::ycoord, X
   INY
 
   LDA (addr_ptr), Y
-  BEQ end_of_objects_loop
   STA objects+Object::direction, X
   INY
+
+  LDA (addr_ptr), Y
+  STA objects+Object::rom_ptr_l, X
+  INY
+
+  LDA (addr_ptr), Y
+  STA objects+Object::rom_ptr_r, X
+  INY
+
+  LDA #$00
+  STA objects+Object::ram, X
 
   INX
   JMP objects_loop
@@ -3259,7 +3277,7 @@ enemy_vrissy_anim_data:
         .word metasprite_18_data, metasprite_19_data ; walking up
         .word metasprite_20_data, metasprite_21_data ; walking down
         .word metasprite_22_data, metasprite_23_data ; walking left
-        .word metasprite_23_data, metasprite_24_data ; walking right
+        .word metasprite_24_data, metasprite_25_data ; walking right
 
 ; indexed by object type
 anim_data_ptr_l:
@@ -3326,7 +3344,7 @@ screens_h:
         ;   [wall x1] [y1] [x2] [y2]
         ;   (ends with x1 == 0)
         ; array of:
-        ;   [object type] [x] [y] [direction] [*opts]
+        ;   [object type] [x] [y] [direction] [rom ptr]
         ;   (ends with object type == 0)
 screen_1_data:
         .word nametable_screen_1
@@ -3338,7 +3356,24 @@ screen_2_data:
         .byte $48, $38, $77, $77
         .byte $88, $78, $B7, $B7
         .byte $00 ; end of walls
+        .byte object_type::enemy_vrissy, $58, $20, direction::right
+        .word screen_2_vrissy_1_code
+        .byte object_type::enemy_vrissy, $98, $60, direction::right
+        .word screen_2_vrissy_2_code
         .byte $00 ; end of objects
+screen_2_vrissy_1_code:
+        .byte $78, direction::down
+        .byte $80, direction::left
+        .byte $38, direction::up
+        .byte $20, direction::right
+        .byte $00
+screen_2_vrissy_2_code:
+        .byte $B8, direction::down
+        .byte $C0, direction::left
+        .byte $78, direction::up
+        .byte $60, direction::right
+        .byte $00
+
 screen_3_data:
         .word nametable_screen_todo
         .byte $00, $00, $02, $00
