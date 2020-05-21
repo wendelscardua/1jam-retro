@@ -181,6 +181,8 @@ next_screen_direction: .res 1
 current_sub_level: .res 1
 frame_counter: .res 1
 sprite_counter: .res 1
+old_player_x: .res 1
+old_player_y: .res 1
 temp_a: .res 1
 temp_b: .res 1
 temp_x: .res 1
@@ -810,8 +812,7 @@ load:
   RTS
 .endproc
 
-.proc check_wall_collision
-  ; returns 1 in A if player hitbox intersect with any wall
+.proc prepare_player_hitbox
   CLC
   LDA hitbox_x1
   ADC objects+Object::xcoord
@@ -828,7 +829,12 @@ load:
   LDA hitbox_y2
   ADC objects+Object::ycoord
   STA temp_hitbox_a+Box::y2
+  RTS
+.endproc
 
+.proc check_wall_collision
+  ; returns 1 in A if player hitbox intersect with any wall
+  JSR prepare_player_hitbox
   LDX num_walls
   DEX
 loop:
@@ -856,6 +862,12 @@ next:
 .endproc
 
 .proc main_playing
+  ; save player position
+  LDA objects+Object::xcoord
+  STA old_player_x
+  LDA objects+Object::ycoord
+  STA old_player_y
+
   JSR player_input
 
   LDA buttons
@@ -993,6 +1005,13 @@ draw_elements_loop:
   PLA
   STA addr_ptr
 
+  ; check collision before drawing
+  CPX #$00
+  BEQ :+
+  JSR handle_object_player_collision
+:
+  ; end collision check
+
   LDA objects+Object::xcoord, X
   STA temp_x
   LDA objects+Object::ycoord, X
@@ -1001,9 +1020,63 @@ draw_elements_loop:
   ; restore X
   PLA
   TAX
+
   DEX
   BPL draw_elements_loop
 
+  RTS
+.endproc
+
+.proc handle_object_player_collision
+  ; input: X = index of object
+  ; cobbles Y
+  JSR prepare_player_hitbox
+
+  LDY objects+Object::type, X
+
+  CLC
+  LDA hitbox_x1, Y
+  ADC objects+Object::xcoord, X
+  STA temp_hitbox_b+Box::x1
+  CLC
+  LDA hitbox_y1, Y
+  ADC objects+Object::ycoord, X
+  STA temp_hitbox_b+Box::y1
+  CLC
+  LDA hitbox_x2, Y
+  ADC objects+Object::xcoord, X
+  STA temp_hitbox_b+Box::x2
+  CLC
+  LDA hitbox_y2, Y
+  ADC objects+Object::ycoord, X
+  STA temp_hitbox_b+Box::y2
+
+  JSR temp_hitbox_collision
+  BEQ return
+
+  CPY #object_type::enemy_vrissy
+  BEQ @enemy_vrissy
+  CPY #object_type::cartridge_wk
+  BEQ @cartridge_wk
+  CPY #object_type::cartridge_gi
+  BEQ @cartridge_gi
+  CPY #object_type::cartridge_mf
+  BEQ @cartridge_mf
+  CPY #object_type::cartridge_rr
+  BEQ @cartridge_rr
+  KIL ; not yet implemented
+@enemy_vrissy:
+  KIL
+  JMP return
+@cartridge_wk:
+  JMP return
+@cartridge_gi:
+  JMP return
+@cartridge_mf:
+  JMP return
+@cartridge_rr:
+  JMP return
+return:
   RTS
 .endproc
 
@@ -3418,15 +3491,15 @@ anim_data_ptr_h:
         .byte >cartridge_rr_anim_data
 
 ; indexed by object type
-;              pl, vr
+;              pl,  vr,  cartridges        , tbd
 hitbox_x1:
-        .byte $03, $02
+        .byte $03, $02, $00, $00, $00, $00
 hitbox_y1:
-        .byte $00, $02
+        .byte $00, $02, $00, $00, $00, $00
 hitbox_x2:
-        .byte $0C, $0D
+        .byte $0C, $0D, $0F, $0F, $0F, $0F
 hitbox_y2:
-        .byte $0F, $0D
+        .byte $0F, $0D, $0F, $0F, $0F, $0F
 
 
 strings:
