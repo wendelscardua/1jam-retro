@@ -936,9 +936,23 @@ move_right:
 update_elements_loop:
   LDA objects+Object::type, X
   CMP #object_type::enemy_vrissy
-  BNE :+
+  BEQ @animate_vrissy
+  CMP #object_type::cartridge_wk
+  BEQ @animate_cartridge
+  CMP #object_type::cartridge_gi
+  BEQ @animate_cartridge
+  CMP #object_type::cartridge_mf
+  BEQ @animate_cartridge
+  CMP #object_type::cartridge_rr
+  BEQ @animate_cartridge
+  JMP next
+@animate_vrissy:
   JSR update_enemy_vrissy
-:
+  JMP next
+@animate_cartridge:
+  JSR animate_cartridge
+  JMP next
+next:
   DEX
   BNE update_elements_loop ; X = 0 is player object
 skip_update_elements:
@@ -990,6 +1004,28 @@ draw_elements_loop:
   DEX
   BPL draw_elements_loop
 
+  RTS
+.endproc
+
+.proc animate_cartridge
+  INC objects+Object::sprite_toggle, X
+  LDA objects+Object::sprite_toggle, X
+  AND #%1111
+  BNE :+
+  LDA objects+Object::sprite_toggle, X
+  AND #%10000
+  BEQ up
+  LDA objects+Object::ycoord, X
+  CLC
+  ADC #4
+  STA objects+Object::ycoord, X
+  JMP :+
+up:
+  LDA objects+Object::ycoord, X
+  SEC
+  SBC #4
+  STA objects+Object::ycoord, X
+:
   RTS
 .endproc
 
@@ -3479,7 +3515,11 @@ screen_2_vrissy_2_code:
 screen_3_data:
         .word nametable_screen_3
         .byte $00, $00, $02, $00
-        .byte $00, $00
+        .byte $00 ; end of walls
+        .byte object_type::cartridge_gi, $B0, $70, direction::up
+        .word $0000
+        .byte $00
+        .byte $00 ; end of objects
 screen_4_data:
         .word nametable_screen_todo
         .byte $00, $00, $05, $01
