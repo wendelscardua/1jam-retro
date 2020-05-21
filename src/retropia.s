@@ -18,6 +18,22 @@ FT_DPCM_OFF= $c000
 
 ; SFX_SOME_SFX = 0
 
+; debug - macros for NintendulatorDX interaction
+.ifdef DEBUG
+.macro debugOut str
+    .local over
+    sta $4040
+    jmp over
+        .byte str, 0
+    over:
+.endmacro
+
+.define fHex8( addr ) 1, 0, <(addr), >(addr)
+.define fDec8( addr ) 1, 1, <(addr), >(addr)
+.define fHex16( addr ) 1, 2, <(addr), >(addr)
+.define fDec16( addr ) 1, 3, <(addr), >(addr)
+.endif
+
 ; workhouse keeper constants
 .enum wk_symbols
   padding = $2D ; "-"
@@ -56,7 +72,8 @@ oam_sprites:
 .zeropage
 
 .enum game_states
-  main_playing = 0
+  ; main game stuff
+  main_playing
   ; wk = workhouse keeper (sokoban clone)
   wk_booting_gamekid
   wk_title
@@ -83,6 +100,61 @@ oam_sprites:
   rr_lose
 .endenum
 
+.struct Box
+  x1 .byte
+  y1 .byte
+  x2 .byte
+  y2 .byte
+.endstruct
+
+.struct AnimData
+  up_sprite_1 .word
+  up_sprite_2 .word
+  down_sprite_1 .word
+  down_sprite_2 .word
+  left_sprite_1 .word
+  left_sprite_2 .word
+  right_sprite_1 .word
+  right_sprite_2 .word
+.endstruct
+
+.enum object_type
+  player
+  enemy_vrissy
+.endenum
+
+.enum direction
+  up
+  down
+  left
+  right
+.endenum
+
+.struct Exit
+  up    .byte
+  down  .byte
+  left  .byte
+  right .byte
+.endstruct
+
+MAX_OBJECTS=10
+.struct Object ; used as struct of arrays
+  type            .res 10 ; enum object_type
+  xcoord          .res 10
+  ycoord          .res 10
+  direction       .res 10 ; enum direction
+  sprite_toggle   .res 10 ; which of the 2 available metasprites to use
+  rom_ptr_l       .res 10 ; up to object_type to implement meaning for these
+  rom_ptr_h       .res 10
+  ram             .res 10
+.endstruct
+
+; object rom/ram definition per object_type:
+; - vrissy
+; rom: (target-x-or-y new-direction)+ (ends with a 0)
+;      - target type depends on current direction
+; ram: current rom index
+
 .importzp rng_seed
 .importzp buttons
 .importzp last_frame_buttons
@@ -92,12 +164,16 @@ oam_sprites:
 
 addr_ptr: .res 2 ; generic address pointer
 ppu_addr_ptr: .res 2 ; temporary address for PPU_ADDR
+second_rle_ptr: .res 2 ; secondary nametable pointer
+palette_ptr: .res 2 ; pointer to palettes
 nmis: .res 1
 old_nmis: .res 1
 args: .res 5
 game_state: .res 1
 current_nametable: .res 1
-current_level: .res 1
+current_screen: .res 1
+current_exits: .res 4 ; up, down, left, right
+next_screen_direction: .res 1
 current_sub_level: .res 1
 frame_counter: .res 1
 sprite_counter: .res 1
@@ -105,10 +181,19 @@ temp_a: .res 1
 temp_b: .res 1
 temp_x: .res 1
 temp_y: .res 1
+temp_hitbox_a: .tag Box
+temp_hitbox_b: .tag Box
+num_objects: .res 1
+objects: .tag Object
 
 .segment "BSS"
 ; non-zp RAM goes here
 gamekid_ram: .res $100
+wall_x1: .res $10
+wall_y1: .res $10
+wall_x2: .res $10
+wall_y2: .res $10
+num_walls: .res 1
 
 .struct wk_var
   table .res 9*16
@@ -285,17 +370,7 @@ clear_ram:
   BNE clear_ram
 
   ; load palettes
-  LDX PPUSTATUS
-  LDX #$3f
-  STX PPUADDR
-  LDX #$00
-  STX PPUADDR
-load_palettes:
-  LDA palettes,X
-  STA PPUDATA
-  INX
-  CPX #$20
-  BNE load_palettes
+  JSR load_palettes
 
   LDA #$23
   STA rng_seed
@@ -321,11 +396,22 @@ vblankwait:       ; wait for another vblank before continuing
   ; LDA #1
   ; JSR FamiToneSfxInit
 
-  ; TODO: change to real game initial state when available
-  LDA #game_states::rr_booting_gamekid
+  ; TODO: change to title screen when available
+  LDA #game_states::main_playing
   STA game_state
+  LDA #1
+  STA current_screen
+  STA num_objects
+  LDA #$80
+  STA objects+Object::xcoord
+  STA objects+Object::ycoord
+  LDA #object_type::player
+  STA objects+Object::type
+  LDA #direction::down
+  STA objects+Object::direction
   LDA #$00
-  STA frame_counter
+  STA objects+Object::sprite_toggle
+  JSR load_screen
 
 forever:
   LDA nmis
@@ -341,9 +427,175 @@ etc:
   JMP forever
 .endproc
 
-.proc load_level
+.proc load_palettes
+  ; input: palette_ptr points to palettes
+  ; cobbles Y
+  LDY PPUSTATUS
+  LDY #$3f
+  STY PPUADDR
+  LDY #$00
+  STY PPUADDR
+:
+  LDA (palette_ptr),Y
+  STA PPUDATA
+  INY
+  CPY #$20
+  BNE :-
+  RTS
+.endproc
+
+.macro add_wall x1, y1, x2, y2
+  LDA x1
+  STA wall_x1, X
+  LDA y1
+  STA wall_y1, X
+  LDA x2
+  STA wall_x2, X
+  LDA y2
+  STA wall_y2, X
+  INX
+.endmacro
+
+.proc load_screen
+  ; loads current screen for main game
+  LDX current_screen
+  LDA screens_l, X
+  STA addr_ptr
+  LDA screens_h, X
+  STA addr_ptr+1
+
+  LDY #0
+
+  ; load nametable pointer
+  LDA (addr_ptr),Y
+  INY
+  STA rle_ptr
+  LDA (addr_ptr),Y
+  INY
+  STA rle_ptr+1
+
+  ; load exits / create outer walls
+  LDX #$00
+
+  LDA (addr_ptr),Y
+  STA current_exits+Exit::up
+  BEQ closed_up
+opened_up:
+  add_wall #$00, #$00, #$57, #$17
+  add_wall #$A8, #$00, #$FF, #$17
+  JMP :+
+closed_up:
+  add_wall #$00, #$00, #$FF, #$17
+:
+  INY
+  LDA (addr_ptr),Y
+  STA current_exits+Exit::down
+  BEQ closed_down
+opened_down:
+  add_wall #$00, #$D8, #$57, #$EF
+  add_wall #$A8, #$D8, #$FF, #$EF
+  JMP :+
+closed_down:
+  add_wall #$00, #$D8, #$FF, #$EF
+:
+  INY
+  LDA (addr_ptr),Y
+  STA current_exits+Exit::left
+  BEQ closed_left
+opened_left:
+  add_wall #$00, #$00, #$17, #$47
+  add_wall #$00, #$A8, #$17, #$EF
+  JMP :+
+closed_left:
+  add_wall #$00, #$00, #$17, #$EF
+:
+  INY
+  LDA (addr_ptr),Y
+  STA current_exits+Exit::right
+  BEQ closed_right
+opened_right:
+  add_wall #$E8, #$00, #$FF, #$47
+  add_wall #$E8, #$A8, #$FF, #$EF
+  JMP :+
+closed_right:
+  add_wall #$E8, #$00, #$FF, #$EF
+:
+  INY
+
+screen_walls_loop:
+  LDA (addr_ptr), Y
+  BEQ end_of_screen_walls
+  STA wall_x1, X
+  INY
+  LDA (addr_ptr), Y
+  STA wall_y1, X
+  INY
+  LDA (addr_ptr), Y
+  STA wall_x2, X
+  INY
+  LDA (addr_ptr), Y
+  STA wall_y2, X
+  INY
+
+  INX
+  JMP screen_walls_loop
+end_of_screen_walls:
+  INY
+  STX num_walls
+
+  LDX #1
+objects_loop:
+  LDA (addr_ptr), Y
+  BEQ end_of_objects_loop
+  STA objects+Object::type, X
+  INY
+
+  LDA (addr_ptr), Y
+  BEQ end_of_objects_loop
+  STA objects+Object::xcoord, X
+  INY
+
+  LDA (addr_ptr), Y
+  STA objects+Object::ycoord, X
+  INY
+
+  LDA (addr_ptr), Y
+  STA objects+Object::direction, X
+  INY
+
+  LDA (addr_ptr), Y
+  STA objects+Object::rom_ptr_l, X
+  INY
+
+  LDA (addr_ptr), Y
+  STA objects+Object::rom_ptr_h, X
+  INY
+
+  LDA (addr_ptr), Y
+  STA objects+Object::ram, X
+  INY
+
+  INX
+  JMP objects_loop
+end_of_objects_loop:
+  INY
+
+  STX num_objects
+
+  LDA #<palettes
+  STA palette_ptr
+  LDA #>palettes
+  STA palette_ptr+1
+  JSR load_nametable
+  LDA #$00
+  STA PPUSCROLL
+  STA PPUSCROLL
+  RTS
+.endproc
+
+.proc load_nametable
 ; expects rle_ptr to already point to rle data
-; if addr_ptr is present, uses it to load second bg
+; if second_rle_ptr is present, uses it to load second bg
   BIT PPUSTATUS
   LDA #%00010000  ; turn off NMIs
   STA PPUCTRL
@@ -368,15 +620,19 @@ etc:
   LDA #$00
   STA PPUADDR
   JSR unrle
-  LDA addr_ptr
+  LDA second_rle_ptr
   BEQ :++
 :  ; wait for another vblank before continuing
   BIT PPUSTATUS
   BPL :-
-  LDA addr_ptr
+  LDA second_rle_ptr
   STA rle_ptr
-  LDA addr_ptr+1
+  LDA #$00
+  STA second_rle_ptr
+  LDA second_rle_ptr+1
   STA rle_ptr+1
+  LDA #$00
+  STA second_rle_ptr+1
   LDA #$24
   STA PPUADDR
   LDA #$00
@@ -388,6 +644,8 @@ etc:
 vblankwait:       ; wait for another vblank before continuing
   BIT PPUSTATUS
   BPL vblankwait
+
+  JSR load_palettes
 
   BIT PPUSTATUS
   LDA #%10010000  ; turn of NMIs
@@ -510,8 +768,327 @@ exit:
   RTS
 .endproc
 
+.proc load_next_screen
+  LDX next_screen_direction
+  CPX #direction::up
+  BEQ wrap_up
+  CPX #direction::down
+  BEQ wrap_down
+  CPX #direction::left
+  BEQ wrap_left
+  CPX #direction::right
+  BEQ wrap_right
+  KIL ; never happens (?)
+wrap_up:
+  LDA #$E0
+  STA objects+Object::ycoord
+  JMP load
+wrap_down:
+  LDA #$00
+  STA objects+Object::ycoord
+  JMP load
+wrap_left:
+  LDA #$F0
+  STA objects+Object::xcoord
+  JMP load
+wrap_right:
+  LDA #$00
+  STA objects+Object::xcoord
+  JMP load
+
+load:
+  LDA current_exits, X
+  BNE :+
+  KIL ; should never try to load zeroth level
+:
+  STA current_screen
+  JSR load_screen
+  RTS
+.endproc
+
+.proc check_wall_collision
+  ; returns 1 in A if player hitbox intersect with any wall
+  CLC
+  LDA hitbox_x1
+  ADC objects+Object::xcoord
+  STA temp_hitbox_a+Box::x1
+  CLC
+  LDA hitbox_y1
+  ADC objects+Object::ycoord
+  STA temp_hitbox_a+Box::y1
+  CLC
+  LDA hitbox_x2
+  ADC objects+Object::xcoord
+  STA temp_hitbox_a+Box::x2
+  CLC
+  LDA hitbox_y2
+  ADC objects+Object::ycoord
+  STA temp_hitbox_a+Box::y2
+
+  LDX num_walls
+  DEX
+loop:
+  LDA wall_x1, X
+  STA temp_hitbox_b+Box::x1
+  LDA wall_y1, X
+  STA temp_hitbox_b+Box::y1
+  LDA wall_x2, X
+  STA temp_hitbox_b+Box::x2
+  LDA wall_y2, X
+  STA temp_hitbox_b+Box::y2
+  JSR temp_hitbox_collision
+  BEQ next
+  .ifdef DEBUG
+  STX temp_b
+  debugOut {"Collision, wall index = ", fDec8{temp_b}}
+  LDA #1
+  .endif
+  RTS ; A = 1
+next:
+  DEX
+  BPL loop
+  LDA #$00
+  RTS
+.endproc
+
 .proc main_playing
   JSR player_input
+
+  LDA buttons
+  AND #BUTTON_UP
+  BEQ :+
+  LDA objects+Object::ycoord
+  BNE move_up
+  LDA #direction::up
+  STA next_screen_direction
+  JSR load_next_screen
+move_up:
+  DEC objects+Object::ycoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::up
+  STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  INC objects+Object::ycoord ; undo move
+:
+  LDA buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+  LDA objects+Object::ycoord
+  CMP #$E0
+  BNE move_down
+  LDA #direction::down
+  STA next_screen_direction
+  JSR load_next_screen
+move_down:
+  INC objects+Object::ycoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::down
+  STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  DEC objects+Object::ycoord ; undo move
+:
+  LDA buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+  LDA objects+Object::xcoord
+  BNE move_left
+  LDA #direction::left
+  STA next_screen_direction
+  JSR load_next_screen
+move_left:
+  DEC objects+Object::xcoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::left
+  STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  INC objects+Object::xcoord ; undo move
+:
+  LDA buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+  LDA objects+Object::xcoord
+  CMP #$F0
+  BNE move_right
+  LDA #direction::right
+  STA next_screen_direction
+  JSR load_next_screen
+move_right:
+  INC objects+Object::xcoord
+  INC objects+Object::sprite_toggle
+  LDA #direction::right
+  STA objects+Object::direction
+  JSR check_wall_collision
+  BEQ :+
+  DEC objects+Object::xcoord ; undo move
+:
+
+  ; update elements
+  LDX num_objects
+  DEX
+  BEQ skip_update_elements
+update_elements_loop:
+  LDA objects+Object::type, X
+  CMP #object_type::enemy_vrissy
+  BNE :+
+  JSR update_enemy_vrissy
+:
+  DEX
+  BNE update_elements_loop ; X = 0 is player object
+skip_update_elements:
+
+  ; draw elements
+  LDA #0
+  STA sprite_counter
+  LDX num_objects
+  DEX
+
+draw_elements_loop:
+  ; Save X
+  TXA
+  PHA
+  ; first we get the pointer to anim_data stuff
+  LDY objects+Object::type, X
+  LDA anim_data_ptr_l, Y
+  STA addr_ptr
+  LDA anim_data_ptr_h, Y
+  STA addr_ptr+1
+  ; then we find the right index to metasprite inside anim_data
+  ; Y = 4 * direction + 2 * sprite_toggle_relevant_bit
+  CLC
+  LDA objects+Object::sprite_toggle, X
+  AND #%1000 ; toggle sprite every 8 frames
+  LSR
+  LSR
+  .repeat 4
+  ADC objects+Object::direction, X
+  .endrepeat
+  TAY
+
+  LDA (addr_ptr),Y
+  PHA
+  INY
+  LDA (addr_ptr),Y
+  STA addr_ptr+1
+  PLA
+  STA addr_ptr
+
+  LDA objects+Object::xcoord, X
+  STA temp_x
+  LDA objects+Object::ycoord, X
+  STA temp_y
+  JSR display_metasprite
+  ; restore X
+  PLA
+  TAX
+  DEX
+  BPL draw_elements_loop
+
+  RTS
+.endproc
+
+.proc update_enemy_vrissy
+  INC objects+Object::sprite_toggle, X
+  ; load rom ptr and ram index
+  LDY objects+Object::ram, X
+  LDA objects+Object::rom_ptr_l, X
+  STA addr_ptr
+  LDA objects+Object::rom_ptr_h, X
+  STA addr_ptr+1
+
+  ; move
+  LDA objects+Object::direction, X
+  CMP #direction::up
+  BEQ move_up
+  CMP #direction::down
+  BEQ move_down
+  CMP #direction::left
+  BEQ move_left
+  CMP #direction::right
+  BEQ move_right
+  KIL
+move_up:
+  DEC objects+Object::ycoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::ycoord, X
+  BEQ update_direction
+  JMP return
+move_down:
+  INC objects+Object::ycoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::ycoord, X
+  BEQ update_direction
+  JMP return
+move_left:
+  DEC objects+Object::xcoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::xcoord, X
+  BEQ update_direction
+  JMP return
+move_right:
+  INC objects+Object::xcoord, X
+  LDA (addr_ptr),Y
+  CMP objects+Object::xcoord, X
+  BEQ update_direction
+  JMP return
+update_direction:
+  INY
+  LDA (addr_ptr),Y
+  STA objects+Object::direction, X
+  INY
+  LDA (addr_ptr),Y
+  BNE :+
+  LDY #$00
+:
+  STY objects+Object::ram, X
+return:
+  RTS
+.endproc
+
+.proc temp_hitbox_collision
+  ; returns 1 in A if temp_hitbox_a and temp_hitbox_b intersect
+  ; Pseudo-code:
+  ;  ((a.x1,a.y1),(a.x2,a.y2)) and ((b.x1,b.y1),(b.x2,b.y2))
+  ;
+  ;  if (a.x2<b.x1 or b.x2<a.x1 or a.y2<b.y1 or b.y2<a.y1):
+  ;      don't intersect
+  ;  else
+  ;      intersect
+  ;
+  ;  Also: foo < bar ==> foo; CMP bar; carry is clear
+  CLC
+  LDA temp_hitbox_a+Box::x2
+  CMP temp_hitbox_b+Box::x1
+  BCS :+
+  LDA #$00
+  RTS
+:
+  CLC
+  LDA temp_hitbox_b+Box::x2
+  CMP temp_hitbox_a+Box::x1
+  BCS :+
+  LDA #$00
+  RTS
+:
+
+  CLC
+  LDA temp_hitbox_a+Box::y2
+  CMP temp_hitbox_b+Box::y1
+  BCS :+
+  LDA #$00
+  RTS
+:
+
+  CLC
+  LDA temp_hitbox_b+Box::y2
+  CMP temp_hitbox_a+Box::y1
+  BCS :+
+  LDA #$00
+  RTS
+:
+  LDA #$01
   RTS
 .endproc
 
@@ -525,15 +1102,21 @@ exit:
   STA rle_ptr
   LDA #>nametable_gamekid_boot
   STA rle_ptr+1
-  ; ... and also wk title
+  ; ... and also subgame title
   LDX game_state
   LDA subgame_by_game_state,X
   TAX
   LDA subgame_nametables_l,X
-  STA addr_ptr
+  STA second_rle_ptr
   LDA subgame_nametables_h,X
-  STA addr_ptr+1
-  JSR load_level
+  STA second_rle_ptr+1
+
+  LDA #<gamekid_palettes
+  STA palette_ptr
+  LDA #>gamekid_palettes
+  STA palette_ptr+1
+
+  JSR load_nametable
 
 wait_for_title:
   ; TODO: optimize
@@ -2651,7 +3234,7 @@ return:
 .proc display_metasprite
   ; input: (addr_ptr) = metasprite pointer
   ;        temp_x and temp_y = screen position for metasprite origin
-
+  ; cobbles X, Y
   LDY #0
   LDX sprite_counter
 loop:
@@ -2738,6 +3321,9 @@ game_state_handlers_h:
 palettes:
 .incbin "../assets/bg-palettes.pal"
 .incbin "../assets/sprite-palettes.pal"
+gamekid_palettes:
+.incbin "../assets/bg-gk-palettes.pal"
+.incbin "../assets/sprite-gk-palettes.pal"
 
 sprites:
 .include "../assets/metasprites.s"
@@ -2753,20 +3339,170 @@ rr_barrier_sprite = metasprite_7_data
 rr_tree_sprite = metasprite_8_data
 rr_flag_sprite = metasprite_9_data
 
+; data fitting AnimData struct
+player_anim_data:
+        .word metasprite_10_data, metasprite_11_data ; walking up
+        .word metasprite_12_data, metasprite_13_data ; walking down
+        .word metasprite_14_data, metasprite_15_data ; walking left
+        .word metasprite_16_data, metasprite_17_data ; walking right
+
+enemy_vrissy_anim_data:
+        .word metasprite_18_data, metasprite_19_data ; walking up
+        .word metasprite_20_data, metasprite_21_data ; walking down
+        .word metasprite_22_data, metasprite_23_data ; walking left
+        .word metasprite_24_data, metasprite_25_data ; walking right
+
+; indexed by object type
+anim_data_ptr_l:
+        .byte <player_anim_data
+        .byte <enemy_vrissy_anim_data
+anim_data_ptr_h:
+        .byte >player_anim_data
+        .byte >enemy_vrissy_anim_data
+
+; indexed by object type
+;              pl, vr
+hitbox_x1:
+        .byte $03, $02
+hitbox_y1:
+        .byte $00, $02
+hitbox_x2:
+        .byte $0C, $0D
+hitbox_y2:
+        .byte $0F, $0D
+
+
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
 string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
 
-levels:
-        .word level_0_data
+screens_l:
+        .byte $00 ; padding
+        .byte <screen_1_data
+        .byte <screen_2_data
+        .byte <screen_3_data
+        .byte <screen_4_data
+        .byte <screen_5_data
+        .byte <screen_6_data
+        .byte <screen_7_data
+        .byte <screen_8_data
+        .byte <screen_9_data
+        .byte <screen_A_data
+        .byte <screen_B_data
+        .byte <screen_C_data
+        .byte <screen_D_data
+        .byte <screen_E_data
+screens_h:
+        .byte $00 ; padding
+        .byte >screen_1_data
+        .byte >screen_2_data
+        .byte >screen_3_data
+        .byte >screen_4_data
+        .byte >screen_5_data
+        .byte >screen_6_data
+        .byte >screen_7_data
+        .byte >screen_8_data
+        .byte >screen_9_data
+        .byte >screen_A_data
+        .byte >screen_B_data
+        .byte >screen_C_data
+        .byte >screen_D_data
+        .byte >screen_E_data
 
-        ; level data format:
+        ; screen data format:
         ; pointer to rle bg nametable
-level_0_data:
-        .word nametable_level_0
+        ; index of screen exits (up,down,left,right)
+        ; array of:
+        ;   [wall x1] [y1] [x2] [y2]
+        ;   (ends with x1 == 0)
+        ; array of:
+        ;   [object type] [x] [y] [direction] [rom ptr] [ram value]
+        ;   (ends with object type == 0)
+screen_1_data:
+        .word nametable_screen_1
+        .byte $0C, $06, $04, $02
+        .byte $00, $00
+screen_2_data:
+        .word nametable_screen_2
+        .byte $00, $00, $01, $03
+        .byte $48, $38, $77, $77
+        .byte $88, $78, $B7, $B7
+        .byte $00 ; end of walls
+        .byte object_type::enemy_vrissy, $58, $20, direction::right
+        .word screen_2_vrissy_1_code
+        .byte $00
+        .byte object_type::enemy_vrissy, $58, $80, direction::left
+        .word screen_2_vrissy_1_code
+        .byte $04
+        .byte object_type::enemy_vrissy, $98, $60, direction::right
+        .word screen_2_vrissy_2_code
+        .byte $00
+        .byte object_type::enemy_vrissy, $98, $C0, direction::left
+        .word screen_2_vrissy_2_code
+        .byte $04
+        .byte $00 ; end of objects
+screen_2_vrissy_1_code:
+        .byte $78, direction::down
+        .byte $80, direction::left
+        .byte $38, direction::up
+        .byte $20, direction::right
+        .byte $00
+screen_2_vrissy_2_code:
+        .byte $B8, direction::down
+        .byte $C0, direction::left
+        .byte $78, direction::up
+        .byte $60, direction::right
+        .byte $00
 
-
+screen_3_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $02, $00
+        .byte $00, $00
+screen_4_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $05, $01
+        .byte $00, $00
+screen_5_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $00, $04
+        .byte $00, $00
+screen_6_data:
+        .word nametable_screen_todo
+        .byte $01, $07, $00, $00
+        .byte $00, $00
+screen_7_data:
+        .word nametable_screen_todo
+        .byte $06, $00, $0A, $08
+        .byte $00, $00
+screen_8_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $07, $09
+        .byte $00, $00
+screen_9_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $08, $00
+        .byte $00, $00
+screen_A_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $0B, $07
+        .byte $00, $00
+screen_B_data:
+        .word nametable_screen_todo
+        .byte $00, $00, $00, $0A
+        .byte $00, $00
+screen_C_data:
+        .word nametable_screen_todo
+        .byte $0D, $01, $00, $03
+        .byte $00, $00
+screen_D_data:
+        .word nametable_screen_todo
+        .byte $0E, $0C, $00, $00
+        .byte $00, $00
+screen_E_data:
+        .word nametable_screen_todo
+        .byte $00, $0D, $00, $00
+        .byte $00, $00
 
 wk_levels:
         .word wk_level_1_data
@@ -2858,12 +3594,15 @@ rr_barrier_transitions:
         .byte %00001 ; from 11110
         .byte %00000 ; from 11111 (victory flag)
 
-nametable_level_0: .incbin "../assets/level/level-0.rle"
-nametable_gamekid_boot: .incbin "../assets/gamekid-boot.rle"
-nametable_wk_title: .incbin "../assets/wk-level/title.rle"
-nametable_gi_title: .incbin "../assets/gi-level/title.rle"
-nametable_mf_title: .incbin "../assets/mf-level/title.rle"
-nametable_rr_title: .incbin "../assets/rr-level/title.rle"
+nametable_screen_1: .incbin "../assets/nametables/screens/screen-1.rle"
+nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
+nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
+
+nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
+nametable_wk_title: .incbin "../assets/nametables/gamekid-titles/wk.rle"
+nametable_gi_title: .incbin "../assets/nametables/gamekid-titles/gi.rle"
+nametable_mf_title: .incbin "../assets/nametables/gamekid-titles/mf.rle"
+nametable_rr_title: .incbin "../assets/nametables/gamekid-titles/rr.rle"
 
 subgame_by_game_state:
         .byte $00 ; main
