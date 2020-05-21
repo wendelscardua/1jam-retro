@@ -571,8 +571,9 @@ objects_loop:
   STA objects+Object::rom_ptr_h, X
   INY
 
-  LDA #$00
+  LDA (addr_ptr), Y
   STA objects+Object::ram, X
+  INY
 
   INX
   JMP objects_loop
@@ -3416,7 +3417,7 @@ screens_h:
         ;   [wall x1] [y1] [x2] [y2]
         ;   (ends with x1 == 0)
         ; array of:
-        ;   [object type] [x] [y] [direction] [rom ptr]
+        ;   [object type] [x] [y] [direction] [rom ptr] [ram value]
         ;   (ends with object type == 0)
 screen_1_data:
         .word nametable_screen_1
@@ -3430,8 +3431,16 @@ screen_2_data:
         .byte $00 ; end of walls
         .byte object_type::enemy_vrissy, $58, $20, direction::right
         .word screen_2_vrissy_1_code
+        .byte $00
+        .byte object_type::enemy_vrissy, $58, $80, direction::left
+        .word screen_2_vrissy_1_code
+        .byte $04
         .byte object_type::enemy_vrissy, $98, $60, direction::right
         .word screen_2_vrissy_2_code
+        .byte $00
+        .byte object_type::enemy_vrissy, $98, $C0, direction::left
+        .word screen_2_vrissy_2_code
+        .byte $04
         .byte $00 ; end of objects
 screen_2_vrissy_1_code:
         .byte $78, direction::down
