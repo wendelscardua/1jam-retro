@@ -121,6 +121,10 @@ oam_sprites:
 .enum object_type
   player
   enemy_vrissy
+  cartridge_wk
+  cartridge_gi
+  cartridge_mf
+  cartridge_rr
 .endenum
 
 .enum direction
@@ -3352,13 +3356,30 @@ enemy_vrissy_anim_data:
         .word metasprite_22_data, metasprite_23_data ; walking left
         .word metasprite_24_data, metasprite_25_data ; walking right
 
+cartridge_wk_anim_data:
+        .word metasprite_26_data, metasprite_26_data ; neutral
+cartridge_gi_anim_data:
+        .word metasprite_27_data, metasprite_27_data ; neutral
+cartridge_mf_anim_data:
+        .word metasprite_28_data, metasprite_28_data ; neutral
+cartridge_rr_anim_data:
+        .word metasprite_29_data, metasprite_29_data ; neutral
+
 ; indexed by object type
 anim_data_ptr_l:
         .byte <player_anim_data
         .byte <enemy_vrissy_anim_data
+        .byte <cartridge_wk_anim_data
+        .byte <cartridge_gi_anim_data
+        .byte <cartridge_mf_anim_data
+        .byte <cartridge_rr_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
         .byte >enemy_vrissy_anim_data
+        .byte >cartridge_wk_anim_data
+        .byte >cartridge_gi_anim_data
+        .byte >cartridge_mf_anim_data
+        .byte >cartridge_rr_anim_data
 
 ; indexed by object type
 ;              pl, vr
@@ -3456,7 +3477,7 @@ screen_2_vrissy_2_code:
         .byte $00
 
 screen_3_data:
-        .word nametable_screen_todo
+        .word nametable_screen_3
         .byte $00, $00, $02, $00
         .byte $00, $00
 screen_4_data:
@@ -3596,6 +3617,8 @@ rr_barrier_transitions:
 
 nametable_screen_1: .incbin "../assets/nametables/screens/screen-1.rle"
 nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
+nametable_screen_3: .incbin "../assets/nametables/screens/screen-3.rle"
+
 nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
 nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
