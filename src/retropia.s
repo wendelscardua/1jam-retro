@@ -81,7 +81,10 @@ oam_sprites:
 
 .enum game_states
   ; main game stuff
+  main_title
   main_playing
+  main_dialog
+  main_inventory
   ; wk = workhouse keeper (sokoban clone)
   wk_booting_gamekid
   wk_title
@@ -808,6 +811,8 @@ skip_second_bg:
 ; these act like printf, displaying the corresponding digit instead
 WRITE_X_SYMBOL = $FE
 
+LINEBREAK_SYMBOL = $0A
+
 .proc write_tiles
   ; write tiles on background
   ; addr_ptr - point to string starting point (strings end with $00)
@@ -823,6 +828,19 @@ WRITE_X_SYMBOL = $FE
 writing_loop:
   LDA (addr_ptr), Y
   BEQ exit
+  CMP #LINEBREAK_SYMBOL
+  BNE :+
+  LDA #$20
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  LDA #$00
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+:
   CMP #WRITE_X_SYMBOL
   BNE write_tile
   TXA
@@ -931,6 +949,11 @@ next:
   DEX
   BPL loop
   LDA #$00
+  RTS
+.endproc
+
+.proc main_title
+  KIL
   RTS
 .endproc
 
@@ -1097,6 +1120,16 @@ draw_elements_loop:
   DEX
   BPL draw_elements_loop
 
+  RTS
+.endproc
+
+.proc main_dialog
+  KIL
+  RTS
+.endproc
+
+.proc main_inventory
+  KIL
   RTS
 .endproc
 
@@ -3478,7 +3511,10 @@ return:
 .segment "RODATA"
 
 game_state_handlers_l:
+  .byte <(main_title-1)
   .byte <(main_playing-1)
+  .byte <(main_dialog-1)
+  .byte <(main_inventory-1)
   .byte <(wk_booting_gamekid-1)
   .byte <(wk_title-1)
   .byte <(wk_load_next_level-1)
@@ -3501,7 +3537,10 @@ game_state_handlers_l:
   .byte <(rr_lose-1)
 
 game_state_handlers_h:
+  .byte >(main_title-1)
   .byte >(main_playing-1)
+  .byte >(main_dialog-1)
+  .byte >(main_inventory-1)
   .byte >(wk_booting_gamekid-1)
   .byte >(wk_title-1)
   .byte >(wk_load_next_level-1)
