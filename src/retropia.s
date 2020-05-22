@@ -291,6 +291,13 @@ RR_FLAG_DELAY=180
   .byte $12
 .endmacro
 
+.macro VBLANK
+  .local vblankwait
+vblankwait:
+  BIT PPUSTATUS
+  BPL vblankwait
+.endmacro
+
 .macro save_regs
   PHA
   TXA
@@ -392,9 +399,7 @@ clear_ram:
   LDA #$C1
   STA rng_seed+1
 
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
+  VBLANK
 
   LDA #%10010000  ; turn on NMIs, sprites use first pattern table
   STA PPUCTRL
@@ -629,19 +634,15 @@ end_of_objects_loop:
 
   ; read bg rle pointer and uncompress it
   save_regs
-:  ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL :-
+  VBLANK
   LDA #$20
   STA PPUADDR
   LDA #$00
   STA PPUADDR
   JSR unrle
   LDA second_rle_ptr
-  BEQ :++
-:  ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL :-
+  BEQ :+
+  VBLANK
   LDA second_rle_ptr
   STA rle_ptr
   LDA #$00
@@ -658,9 +659,7 @@ end_of_objects_loop:
 :
   restore_regs
 
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
+  VBLANK
 
   JSR load_palettes
 
@@ -695,10 +694,7 @@ vblankwait:       ; wait for another vblank before continuing
 .endproc
 
 .proc DEBUG_end
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
-
+  VBLANK
   BIT PPUSTATUS
   LDA #%00011110  ; turn on screen
   STA PPUMASK
@@ -2705,9 +2701,7 @@ draw_tile:
   INC ppu_addr_ptr+1
 :
 
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
+  VBLANK
 
   LDA ppu_addr_ptr+1
   STA PPUADDR
