@@ -1103,9 +1103,16 @@ draw_elements_loop:
 
   ; check collision before drawing
   CPX #$00
-  BEQ :+
+  BEQ skip_collision
+
+  ; hide object if in inventory
+  LDY objects+Object::type, X
+  LDA inventory_mask_per_type, Y
+  AND inventory
+  BNE skip_drawing
+
   JSR handle_object_player_collision
-:
+skip_collision:
   ; end collision check
 
   LDA objects+Object::xcoord, X
@@ -1113,12 +1120,24 @@ draw_elements_loop:
   LDA objects+Object::ycoord, X
   STA temp_y
   JSR display_metasprite
+
+skip_drawing:
   ; restore X
   PLA
   TAX
 
   DEX
   BPL draw_elements_loop
+
+  ; ensure we erase sprites if we lost a metasprite before
+  LDX sprite_counter
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
 
   RTS
 .endproc
@@ -1172,36 +1191,28 @@ draw_elements_loop:
   BEQ @cartridge_rr
   KIL ; not yet implemented
 @enemy_vrissy:
+  ; TODO: death
   KIL
   JMP return
-  ; TODO: the cartridge collisions should just add to inventory (maybe?)
 @cartridge_wk:
   LDA inventory
   ORA #HAS_WK
   STA inventory
-  LDA #game_states::wk_booting_gamekid
-  STA game_state
   JMP return
 @cartridge_gi:
   LDA inventory
   ORA #HAS_GI
   STA inventory
-  LDA #game_states::gi_booting_gamekid
-  STA game_state
   JMP return
 @cartridge_mf:
   LDA inventory
   ORA #HAS_MF
   STA inventory
-  LDA #game_states::mf_booting_gamekid
-  STA game_state
   JMP return
 @cartridge_rr:
   LDA inventory
   ORA #HAS_RR
   STA inventory
-  LDA #game_states::rr_booting_gamekid
-  STA game_state
   JMP return
 return:
   RTS
@@ -3684,6 +3695,11 @@ strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
 string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
+
+inventory_mask_per_type:
+        .byte $00 ; player
+        .byte $00 ; vrissy
+        .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
 
 screens_l:
         .byte $00 ; padding
