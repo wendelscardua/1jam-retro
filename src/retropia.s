@@ -618,6 +618,7 @@ end_of_objects_loop:
 .proc load_nametable
 ; expects rle_ptr to already point to rle data
 ; if second_rle_ptr is present, uses it to load second bg
+; if during main_playing, both bg are the same, but we draw a window on second one
   BIT PPUSTATUS
   LDA #%00010000  ; turn off NMIs
   STA PPUCTRL
@@ -632,6 +633,16 @@ end_of_objects_loop:
   INX
   BNE :-
 
+
+  LDA game_state
+  CMP #game_states::main_playing
+  BNE skip_bg_doubling
+  LDA rle_ptr
+  STA second_rle_ptr
+  LDA rle_ptr+1
+  STA second_rle_ptr+1
+skip_bg_doubling:
+
   ; read bg rle pointer and uncompress it
   save_regs
   VBLANK
@@ -640,9 +651,9 @@ end_of_objects_loop:
   LDA #$00
   STA PPUADDR
   JSR unrle
+
   LDA second_rle_ptr
-  BEQ :+
-  VBLANK
+  BEQ skip_second_bg
   LDA second_rle_ptr
   STA rle_ptr
   LDA #$00
@@ -651,12 +662,67 @@ end_of_objects_loop:
   STA rle_ptr+1
   LDA #$00
   STA second_rle_ptr+1
+
+  VBLANK
   LDA #$24
   STA PPUADDR
   LDA #$00
   STA PPUADDR
   JSR unrle
+
+  LDA game_state
+  CMP #game_states::main_playing
+  BNE skip_second_bg
+
+  VBLANK
+
+  LDY #$7
+rows_loop:
+  LDA window_ppu_addrs_h, Y
+  STA PPUADDR
+  LDA window_ppu_addrs_l, Y
+  STA PPUADDR
+
+  LDA window_ppu_left_tile, Y
+  STA PPUDATA
+
+  LDX #$15
+  LDA window_ppu_center_tile, Y
+tile_loop:
+  STA PPUDATA
+  DEX
+  BPL tile_loop
+
+  LDA window_ppu_right_tile, Y
+  STA PPUDATA
+
+  DEY
+  BPL rows_loop
+
+; color window tiles
+  LDA #$27
+  STA PPUADDR
+  LDA #$E9
+  STA PPUADDR
+  LDX #$5
 :
+  LDA #%01010101
+  STA PPUDATA
+  DEX
+  BPL :-
+
+  LDA #$27
+  STA PPUADDR
+  LDA #$F1
+  STA PPUADDR
+  LDX #$5
+:
+  LDA #%01010101
+  STA PPUDATA
+  DEX
+  BPL :-
+
+skip_second_bg:
   restore_regs
 
   VBLANK
@@ -3527,7 +3593,54 @@ hitbox_x2:
 hitbox_y2:
         .byte $0F, $0D, $0F, $0F, $0F, $0F
 
-
+window_ppu_addrs_l:
+        .byte $84
+        .byte $A4
+        .byte $C4
+        .byte $E4
+        .byte $04
+        .byte $24
+        .byte $44
+        .byte $64
+window_ppu_addrs_h:
+        .byte $26
+        .byte $26
+        .byte $26
+        .byte $26
+        .byte $27
+        .byte $27
+        .byte $27
+        .byte $27
+window_ppu_left_tile:
+        .byte $84
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $A4
+window_ppu_center_tile:
+        .byte $85
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $A5
+window_ppu_right_tile:
+        .byte $86
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $A6
+window_ppu_palette_ptr_l:
+        .byte $E9, $EA, $EB, $EC, $ED, $EE
+        .byte $F1, $F2, $F3, $F4, $F5, $F6
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
 string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
