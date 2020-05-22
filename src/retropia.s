@@ -965,7 +965,12 @@ next:
   STA old_player_y
 
   JSR player_input
-
+  LDA pressed_buttons
+  AND #BUTTON_SELECT
+  BEQ :+
+  LDA #game_states::main_inventory
+  STA game_state
+:
   LDA buttons
   AND #BUTTON_UP
   BEQ :+
