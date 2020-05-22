@@ -957,6 +957,25 @@ next:
   RTS
 .endproc
 
+.proc open_inventory
+  LDA #game_states::main_inventory
+  STA game_state
+  LDA #$1
+  STA current_nametable
+
+  ; hide all sprites (TODO: hide only above window?)
+  LDX #$00
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
+  RTS
+.endproc
+
 .proc main_playing
   ; save player position
   LDA objects+Object::xcoord
@@ -968,8 +987,8 @@ next:
   LDA pressed_buttons
   AND #BUTTON_SELECT
   BEQ :+
-  LDA #game_states::main_inventory
-  STA game_state
+  JSR open_inventory
+  RTS
 :
   LDA buttons
   AND #BUTTON_UP
@@ -1153,7 +1172,6 @@ skip_drawing:
 .endproc
 
 .proc main_inventory
-  KIL
   RTS
 .endproc
 
