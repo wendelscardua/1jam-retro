@@ -1357,6 +1357,7 @@ DIALOG_LAST_ROW=$07
   LDY #0
   LDA (dialog_string_ptr), Y
   BEQ dialog_interaction
+
   INC frame_counter
   LDA frame_counter
   CMP #DIALOG_DELAY
@@ -1408,11 +1409,7 @@ dialog_interaction:
   JSR readjoy
   LDA pressed_buttons
   BEQ no_buttons
-  ; TODO - hide text
-  LDA dialog_current_row
-  CMP #DIALOG_LAST_ROW
-  BEQ continue_dialog
-  JSR end_display_dialog
+  JMP continue_dialog
   RTS
 erasing_rows:
   LDA dialog_current_row
@@ -1440,12 +1437,20 @@ erasing_rows:
   INC dialog_current_row
   LDA dialog_current_row
   CMP #$80 + DIALOG_LAST_ROW
-  BNE :+
+  BEQ @erased_last_row
+  RTS
+@erased_last_row:
+  LDY #0
+  LDA (dialog_string_ptr), Y
+  BNE @continue_drawing
+
+  JSR end_display_dialog
+
+@continue_drawing:
   LDA #$00
   STA dialog_current_row
   JMP linebreak
-:
-  RTS
+
 continue_dialog:
   LDA #$81
   STA dialog_current_row
