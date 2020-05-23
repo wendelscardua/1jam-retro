@@ -232,6 +232,16 @@
 	.byte   4,  3,$1a,3
 	.byte 128
 
+	metasprite_30_data:
+
+	.byte   0,  0,$1c,1
+	.byte 128
+
+	metasprite_31_data:
+
+	.byte   0,  0,$1d,1
+	.byte 128
+
 	metasprite_pointers:
 
 	.word metasprite_0_data
@@ -264,3 +274,5 @@
 	.word metasprite_27_data
 	.word metasprite_28_data
 	.word metasprite_29_data
+	.word metasprite_30_data
+	.word metasprite_31_data

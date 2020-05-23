@@ -3730,6 +3730,9 @@ rr_barrier_sprite = metasprite_7_data
 rr_tree_sprite = metasprite_8_data
 rr_flag_sprite = metasprite_9_data
 
+cursor_up_sprite = metasprite_30_data
+cursor_down_sprite = metasprite_31_data
+
 ; data fitting AnimData struct
 player_anim_data:
         .word metasprite_10_data, metasprite_11_data ; walking up
