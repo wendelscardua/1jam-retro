@@ -1072,12 +1072,19 @@ return:
   BNE :+
   LDA #$FF
   STA inventory
+  RTS
 :
   .endif
   LDA pressed_buttons
   AND #BUTTON_SELECT
   BEQ :+
   JSR open_inventory
+  RTS
+:
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  JSR shoot_fireball
   RTS
 :
   LDA buttons
@@ -1179,6 +1186,12 @@ next:
   BNE update_elements_loop ; X = 0 is player object
 skip_update_elements:
 
+  ; maybe update fireball
+  LDA fireball_x
+  BEQ :+
+  JSR update_fireball
+:
+
   ; draw elements
 draw_elements:
   LDA #0
@@ -1254,6 +1267,30 @@ skip_drawing:
   DEX
   BPL draw_elements_loop
 
+  ; maybe draw fireball
+  LDA fireball_x
+  BEQ skip_fireball
+
+  STA temp_x
+  LDA fireball_y
+  STA temp_y
+
+  LDA nmis
+  AND #%1100
+  LSR
+  LSR
+  TAX
+
+  LDA fireball_sprites_l, X
+  STA addr_ptr
+  LDA fireball_sprites_h, X
+  STA addr_ptr+1
+
+  JSR display_metasprite
+
+
+skip_fireball:
+
   ; display lives
   LDA #<heart_sprite
   STA addr_ptr
@@ -1297,6 +1334,62 @@ skip_lives:
   INX
   .endrepeat
   BNE :-
+
+  RTS
+.endproc
+
+.proc shoot_fireball
+  LDA inventory
+  AND #FINISHED_GI
+  BNE :+
+  RTS
+:
+  LDA objects+Object::xcoord
+  CLC
+  ADC #$08
+  STA fireball_x
+  LDA objects+Object::ycoord
+  CLC
+  ADC #$08
+  STA fireball_y
+  LDA objects+Object::direction
+  STA fireball_direction
+  RTS
+.endproc
+
+.proc update_fireball
+  LDA fireball_direction
+  CMP #direction::up
+  BEQ @move_up
+  CMP #direction::down
+  BEQ @move_down
+  CMP #direction::left
+  BEQ @move_left
+  CMP #direction::right
+  BEQ @move_right
+  KIL ; should never happen
+
+@move_up:
+  DEC fireball_y
+  DEC fireball_y
+  JMP @collisions
+
+@move_down:
+  INC fireball_y
+  INC fireball_y
+  JMP @collisions
+
+@move_left:
+  DEC fireball_x
+  DEC fireball_x
+  JMP @collisions
+
+@move_right:
+  INC fireball_x
+  INC fireball_x
+  ; JMP @collisions
+
+@collisions:
 
   RTS
 .endproc
@@ -4232,8 +4325,10 @@ cartridge_rr_anim_data:
         .word metasprite_29_data, metasprite_29_data ; neutral
 
 ; note: fireballs aren't really objects
-fireball_anim_data:
-        .word fireball_sprite_1, fireball_sprite_2, fireball_sprite_3, fireball_sprite_4
+fireball_sprites_l:
+        .byte <fireball_sprite_1, <fireball_sprite_2, <fireball_sprite_3, <fireball_sprite_4
+fireball_sprites_h:
+        .byte >fireball_sprite_1, >fireball_sprite_2, >fireball_sprite_3, >fireball_sprite_4
 
 ; indexed by object type
 anim_data_ptr_l:
