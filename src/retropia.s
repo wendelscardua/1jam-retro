@@ -197,6 +197,8 @@ frame_counter: .res 1
 sprite_counter: .res 1
 old_player_x: .res 1
 old_player_y: .res 1
+entrance_player_x: .res 1
+entrance_player_y: .res 1
 temp_a: .res 1
 temp_b: .res 1
 temp_x: .res 1
@@ -495,6 +497,11 @@ etc:
 .endmacro
 
 .proc load_screen
+  ; save player entrance position
+  LDA objects+Object::xcoord
+  STA entrance_player_x
+  LDA objects+Object::ycoord
+  STA entrance_player_y
   ; loads current screen for main game
   LDX current_screen
   LDA screens_l, X
