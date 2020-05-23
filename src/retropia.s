@@ -456,6 +456,8 @@ etc:
   STA inventory
   LDA #$01
   STA inventory_selection
+  LDA #$00
+  STA current_nametable
   JSR load_screen
   RTS
 .endproc
@@ -1020,6 +1022,10 @@ next:
   LDX #game_states::rr_booting_gamekid
 :
   STX game_state
+  LDA #$00
+  STA current_nametable
+  LDA #$00
+  STA frame_counter
 return:
   RTS
 .endproc
@@ -1538,6 +1544,19 @@ return:
   RTS
 .endproc
 
+.proc check_quitting_gamekid
+  LDA pressed_buttons
+  AND #(BUTTON_SELECT | BUTTON_START)
+  BEQ :+
+  LDA #game_states::main_playing
+  STA game_state
+  LDA #$00
+  STA current_nametable
+  JSR load_screen
+:
+  RTS
+.endproc
+
 .proc gk_booting_gamekid
   ; generic "state"
 
@@ -1844,6 +1863,7 @@ return:
   BPL :-
 
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA pressed_buttons
   AND #BUTTON_B
   BEQ :++
@@ -2380,6 +2400,7 @@ return:
 
 .proc gi_playing
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA buttons
   AND #BUTTON_LEFT
   BEQ :+
@@ -3048,6 +3069,7 @@ draw_tile:
 
 .proc mf_playing
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA pressed_buttons
   AND #BUTTON_LEFT
   BEQ :+
@@ -3391,6 +3413,7 @@ return:
 
 .proc rr_playing
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA pressed_buttons
   AND #BUTTON_UP
   BEQ :+
