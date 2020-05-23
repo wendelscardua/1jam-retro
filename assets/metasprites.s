@@ -272,6 +272,14 @@
 	.byte - 1,- 2,$21,1|OAM_FLIP_H|OAM_FLIP_V
 	.byte 128
 
+	metasprite_38_data:
+
+	.byte   0,  0,$c0,1
+	.byte   8,  0,$c0,1|OAM_FLIP_H
+	.byte   0,  8,$c0,1|OAM_FLIP_V
+	.byte   8,  8,$c0,1|OAM_FLIP_H|OAM_FLIP_V
+	.byte 128
+
 	metasprite_pointers:
 
 	.word metasprite_0_data
@@ -312,3 +320,4 @@
 	.word metasprite_35_data
 	.word metasprite_36_data
 	.word metasprite_37_data
+	.word metasprite_38_data
