@@ -186,6 +186,7 @@ old_nmis: .res 1
 args: .res 5
 game_state: .res 1
 inventory: .res 1
+inventory_selection: .res 1
 current_nametable: .res 1
 current_screen: .res 1
 current_exits: .res 4 ; up, down, left, right
@@ -1190,18 +1191,15 @@ loop:
   ASL
   ASL
   ASL
+  PHA
   ASL
 
   CLC
   ADC #$08
   STA temp_x
 
-  TYA
-  AND #%1
-  ASL
-  ASL
-  ASL
-  ASL
+  PLA
+  AND #%10000
   CLC
   ADC #$B0
   STA temp_y
