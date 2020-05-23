@@ -85,6 +85,8 @@ oam_sprites:
   main_playing
   main_dialog
   main_inventory
+  main_dying
+  main_game_over
   ; wk = workhouse keeper (sokoban clone)
   wk_booting_gamekid
   wk_title
@@ -1154,6 +1156,7 @@ next:
 skip_update_elements:
 
   ; draw elements
+draw_elements:
   LDA #0
   STA sprite_counter
   LDX num_objects
@@ -1192,6 +1195,9 @@ draw_elements_loop:
   ; check collision before drawing
   CPX #$00
   BEQ skip_collision
+  LDA game_state
+  CMP #game_states::main_playing
+  BNE skip_collision
 
   ; hide object if in inventory
   LDY objects+Object::type, X
@@ -1397,6 +1403,54 @@ skip_cursor:
   RTS
 .endproc
 
+DYING_FRAMES = 60
+.proc main_dying
+  LDA frame_counter
+  CMP #DYING_FRAMES
+  BEQ stop_blinking
+  INC frame_counter
+  LDA frame_counter
+  AND #%1000
+  BNE show_player
+hide_player:
+  LDA objects+Object::ycoord
+  CMP #$F0
+  BEQ update_sprite
+  STA old_player_y
+  LDA #$F0
+  STA objects+Object::ycoord
+  JMP update_sprite
+show_player:
+  LDA old_player_y
+  STA objects+Object::ycoord
+update_sprite:
+  ; XXX hijack main_playing drawing code
+  JSR main_playing::draw_elements
+  RTS
+stop_blinking:
+  LDA lives
+  BEQ game_over
+  LDA entrance_player_x
+  STA objects+Object::xcoord
+  LDA entrance_player_y
+  STA objects+Object::ycoord
+  LDA #game_states::main_playing
+  STA game_state
+  JSR load_screen
+  RTS
+game_over:
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::main_game_over
+  STA game_state
+  RTS
+.endproc
+
+.proc main_game_over
+  KIL ; TODO - game over
+  RTS
+.endproc
+
 .proc handle_object_player_collision
   ; input: X = index of object
   ; cobbles Y
@@ -1436,8 +1490,7 @@ skip_cursor:
   BEQ @cartridge_rr
   KIL ; not yet implemented
 @enemy_vrissy:
-  ; TODO: death
-  KIL
+  JSR damage_player
   JMP return
 @cartridge_wk:
   LDA inventory
@@ -1460,6 +1513,15 @@ skip_cursor:
   STA inventory
   JMP return
 return:
+  RTS
+.endproc
+
+.proc damage_player
+  DEC lives
+  LDA #$00
+  STA frame_counter
+  LDA #game_states::main_dying
+  STA game_state
   RTS
 .endproc
 
@@ -3851,6 +3913,8 @@ game_state_handlers_l:
   .byte <(main_playing-1)
   .byte <(main_dialog-1)
   .byte <(main_inventory-1)
+  .byte <(main_dying-1)
+  .byte <(main_game_over-1)
   .byte <(wk_booting_gamekid-1)
   .byte <(wk_title-1)
   .byte <(wk_load_next_level-1)
@@ -3877,6 +3941,8 @@ game_state_handlers_h:
   .byte >(main_playing-1)
   .byte >(main_dialog-1)
   .byte >(main_inventory-1)
+  .byte >(main_dying-1)
+  .byte >(main_game_over-1)
   .byte >(wk_booting_gamekid-1)
   .byte >(wk_title-1)
   .byte >(wk_load_next_level-1)
