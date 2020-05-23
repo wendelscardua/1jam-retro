@@ -2037,6 +2037,9 @@ after_drawing:
   STA game_state
   JMP return
 win:
+  LDA inventory
+  ORA #HAS_WK
+  STA inventory
   LDA #game_states::wk_win
   STA game_state
   LDA #$00
@@ -2062,6 +2065,8 @@ return:
 .endproc
 
 .proc wk_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$AC
   STA ppu_addr_ptr
   LDA current_nametable
@@ -2075,7 +2080,15 @@ return:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with push power)
+  STA PPUSCROLL
+  STA PPUSCROLL
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
