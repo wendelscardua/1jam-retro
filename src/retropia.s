@@ -4284,12 +4284,7 @@ string_gi_cartridge: .byte "YOU_GOT_A_NEW", $0A
 string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
                          .byte "WAS_DEFEATED", $0A
                          .byte $0A
-                         .byte "OUR_HOPE_WAS_GONE", $0A
-                         .byte $0A
-                         .byte $0A
-                         .byte $0A
-                         .byte "THAT_IS", $0A
-                         .byte "UNTIL_THE_NEXT_ONE", $0A
+                         .byte "OUR_HOPE_IS_GONE", $00
 inventory_mask_per_type:
         .byte $00 ; player
         .byte $00 ; vrissy
