@@ -1405,10 +1405,86 @@ skip_lives:
   CMP #$E8
   BCS delete_fireball
 
-  RTS
+  ; TODO - maybe collide with walls (don't care much about it)
+
+  ; collide with enemy
+  JMP enemy_collision
 delete_fireball:
   LDA #$00
   STA fireball_x
+  RTS
+enemy_collision:
+  LDX num_objects
+  BNE :+
+  RTS
+:
+  DEX
+@loop:
+  LDY objects+Object::type, X
+  LDA is_enemy_per_type, Y
+  BEQ @next
+
+  CLC
+  LDA hitbox_x1, Y
+  ADC objects+Object::xcoord, X
+  SEC
+  SBC #$04
+  STA temp_hitbox_b+Box::x1
+  CLC
+  LDA hitbox_y1, Y
+  ADC objects+Object::ycoord, X
+  SEC
+  SBC #$04
+  STA temp_hitbox_b+Box::y1
+  CLC
+  LDA hitbox_x2, Y
+  ADC objects+Object::xcoord, X
+  ADC #$04
+  STA temp_hitbox_b+Box::x2
+  CLC
+  LDA hitbox_y2, Y
+  ADC objects+Object::ycoord, X
+  ADC #$04
+  STA temp_hitbox_b+Box::y2
+
+  LDA fireball_x
+  CMP temp_hitbox_b+Box::x1
+  BCC @next
+  CMP temp_hitbox_b+Box::x2
+  BCS @next
+  LDA fireball_y
+  CMP temp_hitbox_b+Box::y1
+  BCC @next
+  CMP temp_hitbox_b+Box::y2
+  BCS @next
+
+  ; delete fireball and object
+  DEC num_objects
+  CPX num_objects
+  BEQ :+
+  LDY num_objects
+  LDA objects+Object::type, Y
+  STA objects+Object::type, X
+  LDA objects+Object::xcoord, Y
+  STA objects+Object::xcoord, X
+  LDA objects+Object::ycoord, Y
+  STA objects+Object::ycoord, X
+  LDA objects+Object::direction, Y
+  STA objects+Object::direction, X
+  LDA objects+Object::sprite_toggle, Y
+  STA objects+Object::sprite_toggle, X
+  LDA objects+Object::rom_ptr_l, Y
+  STA objects+Object::rom_ptr_l, X
+  LDA objects+Object::rom_ptr_h, Y
+  STA objects+Object::rom_ptr_h, X
+  LDA objects+Object::ram, Y
+  STA objects+Object::ram, X
+:
+  JMP delete_fireball
+@next:
+  DEX
+  BPL @loop
+
   RTS
 .endproc
 
@@ -4453,6 +4529,10 @@ inventory_mask_per_type:
 inventory_mask_per_index:
         .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
 
+is_enemy_per_type:
+        .byte $00 ; player
+        .byte $01 ; vrissy
+        .byte $00, $00, $00, $00 ; cartridges
 
 screens_l:
         .byte $00 ; padding
