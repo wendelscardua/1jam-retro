@@ -1390,7 +1390,25 @@ skip_lives:
   ; JMP @collisions
 
 @collisions:
+  ; disappear if out of bounds
+  LDA fireball_x
+  CMP #$08
+  BCC delete_fireball
+  LDA fireball_y
+  CMP #$08
+  BCC delete_fireball
 
+  LDA fireball_x
+  CMP #$F8
+  BCS delete_fireball
+  LDA fireball_y
+  CMP #$E8
+  BCS delete_fireball
+
+  RTS
+delete_fireball:
+  LDA #$00
+  STA fireball_x
   RTS
 .endproc
 
