@@ -86,7 +86,6 @@ oam_sprites:
   main_dialog
   main_inventory
   main_dying
-  main_game_over
   ; wk = workhouse keeper (sokoban clone)
   wk_booting_gamekid
   wk_title
@@ -1640,11 +1639,6 @@ stop_blinking:
   RTS
 game_over:
   DIALOG string_dialog_game_over, start_game_setup ; TODO return to title
-  RTS
-.endproc
-
-.proc main_game_over
-  KIL ; TODO - game over
   RTS
 .endproc
 
@@ -4114,7 +4108,6 @@ game_state_handlers_l:
   .byte <(main_dialog-1)
   .byte <(main_inventory-1)
   .byte <(main_dying-1)
-  .byte <(main_game_over-1)
   .byte <(wk_booting_gamekid-1)
   .byte <(wk_title-1)
   .byte <(wk_load_next_level-1)
@@ -4142,7 +4135,6 @@ game_state_handlers_h:
   .byte >(main_dialog-1)
   .byte >(main_inventory-1)
   .byte >(main_dying-1)
-  .byte >(main_game_over-1)
   .byte >(wk_booting_gamekid-1)
   .byte >(wk_title-1)
   .byte >(wk_load_next_level-1)
@@ -4569,7 +4561,7 @@ nametable_mf_title: .incbin "../assets/nametables/gamekid-titles/mf.rle"
 nametable_rr_title: .incbin "../assets/nametables/gamekid-titles/rr.rle"
 
 subgame_by_game_state:
-        .byte $00, $00, $00, $00, $00, $00 ; main
+        .byte $00, $00, $00, $00, $00 ; main
         .byte $01, $01, $01, $01, $01 ; WK
         .byte $02, $02, $02, $02, $02 ; GI
         .byte $03, $03, $03, $03, $03 ; MF
