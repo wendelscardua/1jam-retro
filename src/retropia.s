@@ -1172,6 +1172,64 @@ skip_drawing:
 .endproc
 
 .proc main_inventory
+  ; player input
+
+  LDA #$00
+  STA sprite_counter
+  ; draw elements
+  LDY #object_type::cartridge_wk
+loop:
+  LDA inventory_mask_per_type, Y
+  AND inventory
+  BEQ next
+
+  TYA
+  PHA
+
+  ASL
+  ASL
+  ASL
+  ASL
+  ASL
+
+  CLC
+  ADC #$08
+  STA temp_x
+
+  TYA
+  AND #%1
+  ASL
+  ASL
+  ASL
+  ASL
+  CLC
+  ADC #$B0
+  STA temp_y
+
+  LDA anim_data_ptr_l, Y
+  STA addr_ptr
+  LDA anim_data_ptr_h, Y
+  STA addr_ptr+1
+
+  LDY #$00
+  LDA (addr_ptr),Y
+  PHA
+  INY
+  LDA (addr_ptr),Y
+  STA addr_ptr+1
+  PLA
+  STA addr_ptr
+
+  JSR display_metasprite
+
+  PLA
+  TAY
+
+next:
+  INY
+  CPY #(object_type::cartridge_rr+1)
+  BNE loop
+
   RTS
 .endproc
 
