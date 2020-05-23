@@ -4094,9 +4094,12 @@ window_ppu_palette_ptr_l:
         .byte $E9, $EA, $EB, $EC, $ED, $EE
         .byte $F1, $F2, $F3, $F4, $F5, $F6
 strings:
-string_game_over: .byte "GAME", $5B, "OVER", $00
-string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
-string_you_win: .byte "YOU", $5B, "WIN", $00
+string_game_over: .byte "GAME_OVER", $00
+string_lives: .byte "LIVES_", WRITE_X_SYMBOL, $00
+string_you_win: .byte "YOU_WIN", $00
+string_gi_cartridge: .byte "YOU_GOT_A_NEW\n"
+                     .byte "CARTRIDGE_OF_LEGEND\n"
+                     .byte "GALAXY_INTRUDERS", $00
 
 inventory_mask_per_type:
         .byte $00 ; player
