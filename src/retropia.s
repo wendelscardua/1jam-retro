@@ -1544,15 +1544,20 @@ return:
   RTS
 .endproc
 
-.proc check_quitting_gamekid
-  LDA pressed_buttons
-  AND #(BUTTON_SELECT | BUTTON_START)
-  BEQ :+
+.proc quit_gamekid
   LDA #game_states::main_playing
   STA game_state
   LDA #$00
   STA current_nametable
   JSR load_screen
+  RTS
+.endproc
+
+.proc check_quitting_gamekid
+  LDA pressed_buttons
+  AND #(BUTTON_SELECT | BUTTON_START)
+  BEQ :+
+  JSR quit_gamekid
 :
   RTS
 .endproc
