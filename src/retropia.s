@@ -137,6 +137,7 @@ oam_sprites:
   cartridge_gi
   cartridge_mf
   cartridge_rr
+  pushable_block
 .endenum
 
 .enum direction
@@ -166,10 +167,13 @@ MAX_OBJECTS=10
 .endstruct
 
 ; object rom/ram definition per object_type:
-; - vrissy
+; - vrissy -> walks along a path
 ; rom: (target-x-or-y new-direction)+ (ends with a 0)
 ;      - target type depends on current direction
 ; ram: current rom index
+; - pushable block -> can be pushed between two locations
+; rom: (target-x-left-or-y-up target-x-right-or-y-down)
+; ram: boolean-pushed
 
 .importzp rng_seed
 .importzp buttons
@@ -1174,12 +1178,17 @@ update_elements_loop:
   BEQ @animate_cartridge
   CMP #object_type::cartridge_rr
   BEQ @animate_cartridge
+  CMP #object_type::pushable_block
+  BEQ @animate_block
   JMP next
 @animate_vrissy:
   JSR update_enemy_vrissy
   JMP next
 @animate_cartridge:
   JSR animate_cartridge
+  JMP next
+@animate_block:
+  JSR animate_block
   JMP next
 next:
   DEX
@@ -2003,6 +2012,14 @@ update_direction:
 :
   STY objects+Object::ram, X
 return:
+  RTS
+.endproc
+
+.proc animate_block
+  LDA objects+Object::ram, X
+  BNE moving
+  RTS
+moving:
   RTS
 .endproc
 
@@ -4443,6 +4460,12 @@ cartridge_mf_anim_data:
 cartridge_rr_anim_data:
         .word metasprite_29_data, metasprite_29_data ; neutral
 
+pushable_block_anim_data:
+        .word metasprite_38_data, metasprite_38_data ; moving up
+        .word metasprite_38_data, metasprite_38_data ; moving down
+        .word metasprite_38_data, metasprite_38_data ; moving left
+        .word metasprite_38_data, metasprite_38_data ; moving right
+
 ; note: fireballs aren't really objects
 fireball_sprites_l:
         .byte <fireball_sprite_1, <fireball_sprite_2, <fireball_sprite_3, <fireball_sprite_4
@@ -4457,6 +4480,7 @@ anim_data_ptr_l:
         .byte <cartridge_gi_anim_data
         .byte <cartridge_mf_anim_data
         .byte <cartridge_rr_anim_data
+        .byte <pushable_block_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
         .byte >enemy_vrissy_anim_data
@@ -4464,17 +4488,18 @@ anim_data_ptr_h:
         .byte >cartridge_gi_anim_data
         .byte >cartridge_mf_anim_data
         .byte >cartridge_rr_anim_data
+        .byte >pushable_block_anim_data
 
 ; indexed by object type
-;              pl,  vr,  cartridges        , tbd
+;              pl,  vr,  cartridges        , block
 hitbox_x1:
-        .byte $03, $02, $00, $00, $00, $00
+        .byte $03, $02, $00, $00, $00, $00, $00
 hitbox_y1:
-        .byte $00, $02, $00, $00, $00, $00
+        .byte $00, $02, $00, $00, $00, $00, $00
 hitbox_x2:
-        .byte $0C, $0D, $0F, $0F, $0F, $0F
+        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F
 hitbox_y2:
-        .byte $0F, $0D, $0F, $0F, $0F, $0F
+        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F
 
 window_ppu_addrs_l:
         .byte $84
@@ -4562,11 +4587,13 @@ inventory_mask_per_type:
         .byte $00 ; vrissy
 inventory_mask_per_index:
         .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
+        .byte $00 ; block
 
 is_enemy_per_type:
         .byte $00 ; player
         .byte $01 ; vrissy
         .byte $00, $00, $00, $00 ; cartridges
+        .byte $00 ; block
 
 screens_l:
         .byte $00 ; padding
@@ -4670,9 +4697,24 @@ screen_3_data:
         .byte $00
         .byte $00 ; end of objects
 screen_4_data:
-        .word nametable_screen_todo
+        .word nametable_screen_4
         .byte $00, $00, $05, $01
-        .byte $00, $00
+        .byte $00
+
+        .byte object_type::pushable_block, $60, $90, direction::up
+        .word screen_4_block_1_code
+        .byte $00
+
+        .byte object_type::pushable_block, $90, $90, direction::right
+        .word screen_4_block_2_code
+        .byte $00
+
+        .byte $00 ; end of objects
+screen_4_block_1_code:
+        .byte $30, $90
+screen_4_block_2_code:
+        .byte $90, $D0
+
 screen_5_data:
         .word nametable_screen_todo
         .byte $00, $00, $00, $04
@@ -4807,6 +4849,7 @@ rr_barrier_transitions:
 nametable_screen_1: .incbin "../assets/nametables/screens/screen-1.rle"
 nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
 nametable_screen_3: .incbin "../assets/nametables/screens/screen-3.rle"
+nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
 
 nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
