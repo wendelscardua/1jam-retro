@@ -213,6 +213,9 @@ dialog_string_ptr: .res 2
 dialog_ppu_ptr: .res 2
 dialog_callback: .res 2
 dialog_current_row: .res 1
+fireball_x: .res 1
+fireball_y: .res 1
+fireball_direction: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -508,6 +511,13 @@ etc:
   STA entrance_player_x
   LDA objects+Object::ycoord
   STA entrance_player_y
+
+  ; hide any lost fireballs
+  LDA #$00
+  STA fireball_x
+  STA fireball_y
+  STA fireball_direction
+
   ; loads current screen for main game
   LDX current_screen
   LDA screens_l, X
