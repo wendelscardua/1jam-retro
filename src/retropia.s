@@ -1064,6 +1064,16 @@ return:
   STA old_player_y
 
   JSR readjoy
+  .ifdef DEBUG
+  ; press A + B in debug mode to unlock all power ups
+  LDA buttons
+  AND #(BUTTON_A | BUTTON_B)
+  CMP #(BUTTON_A | BUTTON_B)
+  BNE :+
+  LDA #$FF
+  STA inventory
+:
+  .endif
   LDA pressed_buttons
   AND #BUTTON_SELECT
   BEQ :+
