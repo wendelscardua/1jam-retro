@@ -1211,6 +1211,13 @@ draw_elements_loop:
   BNE skip_drawing
 
   JSR handle_object_player_collision
+  ; if collision changed stuff, stop drawing
+  LDA game_state
+  CMP #game_states::main_playing
+  BEQ skip_collision
+  PLA
+  RTS
+
 skip_collision:
   ; end collision check
 
@@ -1686,6 +1693,7 @@ game_over:
   LDA inventory
   ORA #HAS_GI
   STA inventory
+  DIALOG string_dialog_gi_cartridge
   JMP return
 @cartridge_mf:
   LDA inventory
@@ -4278,9 +4286,10 @@ strings:
 string_game_over: .byte "GAME_OVER", $00
 string_lives: .byte "LIVES_", WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU_WIN", $00
-string_gi_cartridge: .byte "YOU_GOT_A_NEW", $0A
-                     .byte "CARTRIDGE_OF_LEGEND", $0A
-                     .byte "GALAXY_INTRUDERS", $00
+string_dialog_gi_cartridge: .byte "YOU_GOT_A_NEW", $0A
+                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte $0A
+                            .byte "GALAXY_INTRUDERS", $00
 string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
                          .byte "WAS_DEFEATED", $0A
                          .byte $0A
