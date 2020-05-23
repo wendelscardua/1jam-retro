@@ -3990,6 +3990,8 @@ cursor_down_sprite = metasprite_31_data
 
 heart_sprite = metasprite_32_data
 
+text_cursor_sprite = metasprite_33_data
+
 ; data fitting AnimData struct
 player_anim_data:
         .word metasprite_10_data, metasprite_11_data ; walking up
