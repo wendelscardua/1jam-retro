@@ -213,6 +213,7 @@ objects: .tag Object
 dialog_string_ptr: .res 2
 dialog_ppu_ptr: .res 2
 dialog_next_state: .res 1
+dialog_current_row: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -1274,8 +1275,96 @@ skip_lives:
   RTS
 .endproc
 
+.macro DIALOG string_pointer, next_state
+  LDA #<string_pointer
+  STA dialog_string_ptr
+  LDA #>string_pointer
+  STA dialog_string_ptr+1
+  .ifblank next_state
+  LDA #game_states::main_playing
+  .else
+  LDA next_state
+  .endif
+  STA dialog_next_state
+  JSR begin_display_dialog
+.endmacro
+
+.proc begin_display_dialog
+  LDX #$1
+  STX dialog_current_row
+  LDA window_ppu_addrs_l, X
+  CLC
+  ADC #$02
+  STA dialog_ppu_ptr
+  LDA window_ppu_addrs_h, X
+  STA dialog_ppu_ptr+1
+  LDA #$00
+  STA frame_counter
+  LDA #$01
+  STA current_nametable
+  LDA #game_states::main_dialog
+  STA game_state
+  RTS
+.endproc
+
+.proc end_display_dialog
+  LDA #$00
+  STA current_nametable
+  LDA dialog_next_state
+  STA game_state
+  RTS
+.endproc
+
 .proc main_dialog
-  KIL
+  LDY #0
+  LDA (dialog_string_ptr), Y
+  BEQ dialog_interaction
+
+  CMP #$0A
+  BEQ linebreak
+  ; display single char (TODO - maybe SFX and/or delay per char)
+  LDA PPUSTATUS
+  LDA dialog_ppu_ptr+1
+  STA PPUADDR
+  LDA dialog_ppu_ptr
+  STA PPUADDR
+  LDA (dialog_string_ptr), Y
+  STA PPUDATA
+  LDA #$24
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
+
+increment_pointers:
+  INC dialog_ppu_ptr
+  BNE :+
+  INC dialog_ppu_ptr+1
+:
+  INC dialog_string_ptr
+  BNE :+
+  INC dialog_string_ptr+1
+:
+  RTS
+linebreak:
+  INC dialog_current_row
+  LDX dialog_current_row
+  LDA window_ppu_addrs_l, X
+  CLC
+  ADC #$01
+  STA dialog_ppu_ptr
+  LDA window_ppu_addrs_h, X
+  STA dialog_ppu_ptr+1
+  JSR increment_pointers
+  JMP main_dialog
+dialog_interaction:
+  ; TODO display prompt sprite
+  JSR readjoy
+  LDA pressed_buttons
+  BEQ :+
+  KIL ; TODO - hide text and quit dialog mode
+:
   RTS
 .endproc
 
@@ -1443,10 +1532,7 @@ stop_blinking:
   JSR load_screen
   RTS
 game_over:
-  LDA #$00
-  STA frame_counter
-  LDA #game_states::main_game_over
-  STA game_state
+  DIALOG string_dialog_game_over, #game_states::main_game_over
   RTS
 .endproc
 
@@ -4097,10 +4183,12 @@ strings:
 string_game_over: .byte "GAME_OVER", $00
 string_lives: .byte "LIVES_", WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU_WIN", $00
-string_gi_cartridge: .byte "YOU_GOT_A_NEW\n"
-                     .byte "CARTRIDGE_OF_LEGEND\n"
+string_gi_cartridge: .byte "YOU_GOT_A_NEW", $0A
+                     .byte "CARTRIDGE_OF_LEGEND", $0A
                      .byte "GALAXY_INTRUDERS", $00
-
+string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
+                         .byte "WAS_DEFEATED", $0A, $0A
+                         .byte "OUR_HOPE_WAS_GONE", $00
 inventory_mask_per_type:
         .byte $00 ; player
         .byte $00 ; vrissy
