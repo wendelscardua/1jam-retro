@@ -1315,14 +1315,23 @@ skip_lives:
   RTS
 .endproc
 
+DIALOG_DELAY=$04
 .proc main_dialog
   LDY #0
   LDA (dialog_string_ptr), Y
   BEQ dialog_interaction
-
+  INC frame_counter
+  LDA frame_counter
+  CMP #DIALOG_DELAY
+  BEQ :+
+  RTS
+:
+  LDA #$00
+  STA frame_counter
+  LDA (dialog_string_ptr), Y
   CMP #$0A
   BEQ linebreak
-  ; display single char (TODO - maybe SFX and/or delay per char)
+  ; display single char (TODO - maybe SFX)
   LDA PPUSTATUS
   LDA dialog_ppu_ptr+1
   STA PPUADDR
