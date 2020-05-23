@@ -179,6 +179,7 @@ MAX_OBJECTS=10
 .importzp pressed_buttons
 .importzp rle_ptr
 
+; zp vars
 addr_ptr: .res 2 ; generic address pointer
 ppu_addr_ptr: .res 2 ; temporary address for PPU_ADDR
 second_rle_ptr: .res 2 ; secondary nametable pointer
@@ -209,6 +210,9 @@ temp_hitbox_a: .tag Box
 temp_hitbox_b: .tag Box
 num_objects: .res 1
 objects: .tag Object
+dialog_string_ptr: .res 2
+dialog_ppu_ptr: .res 2
+dialog_next_state: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
