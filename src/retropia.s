@@ -2640,6 +2640,8 @@ skip_draw_loop:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
 wait_to_return:
   INC frame_counter
   LDA #GAMEKID_DELAY
@@ -3156,6 +3158,11 @@ draw_tile:
   LDA gamekid_ram+mf_var::opened_cells
   CMP #(.sizeof(mf_var::table) - MF_BOMBS)
   BNE :+
+  LDA inventory
+  ORA #HAS_MF
+  STA inventory
+  LDA #$00
+  STA frame_counter
   LDA #game_states::mf_win
   STA game_state
 :
@@ -3201,6 +3208,8 @@ draw_cursor:
 .endproc
 
 .proc mf_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$20
   STA ppu_addr_ptr+1
   LDA #$CC
@@ -3210,7 +3219,15 @@ draw_cursor:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with bomb)
+  STA PPUSCROLL
+  STA PPUSCROLL
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
