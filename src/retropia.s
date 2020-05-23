@@ -1304,6 +1304,17 @@ skip_lives:
   STA current_nametable
   LDA #game_states::main_dialog
   STA game_state
+
+  ; erase sprites
+  LDX #$00
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
   RTS
 .endproc
 
@@ -1368,12 +1379,28 @@ linebreak:
   JSR increment_pointers
   JMP main_dialog
 dialog_interaction:
-  ; TODO display prompt sprite
   JSR readjoy
   LDA pressed_buttons
   BEQ :+
   KIL ; TODO - hide text and quit dialog mode
+  RTS
 :
+  LDA #$00
+  STA sprite_counter
+  LDA nmis
+  AND #%10000
+  LSR
+  LSR
+  CLC
+  ADC #$CE
+  STA temp_x
+  LDA #$D0
+  STA temp_y
+  LDA #<text_cursor_sprite
+  STA addr_ptr
+  LDA #>text_cursor_sprite
+  STA addr_ptr+1
+  JSR display_metasprite
   RTS
 .endproc
 
