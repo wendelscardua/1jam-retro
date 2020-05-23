@@ -1668,8 +1668,9 @@ game_over:
   STA temp_hitbox_b+Box::y2
 
   JSR temp_hitbox_collision
-  BEQ return
-
+  BNE collided
+  RTS
+collided:
   CPY #object_type::enemy_vrissy
   BEQ @enemy_vrissy
   CPY #object_type::cartridge_wk
@@ -1683,29 +1684,30 @@ game_over:
   KIL ; not yet implemented
 @enemy_vrissy:
   JSR damage_player
-  JMP return
+  RTS
 @cartridge_wk:
   LDA inventory
   ORA #HAS_WK
   STA inventory
-  JMP return
+  DIALOG string_dialog_wk_cartridge
+  RTS
 @cartridge_gi:
   LDA inventory
   ORA #HAS_GI
   STA inventory
   DIALOG string_dialog_gi_cartridge
-  JMP return
+  RTS
 @cartridge_mf:
   LDA inventory
   ORA #HAS_MF
   STA inventory
-  JMP return
+  DIALOG string_dialog_mf_cartridge
+  RTS
 @cartridge_rr:
   LDA inventory
   ORA #HAS_RR
   STA inventory
-  JMP return
-return:
+  DIALOG string_dialog_rr_cartridge
   RTS
 .endproc
 
@@ -4286,10 +4288,22 @@ strings:
 string_game_over: .byte "GAME_OVER", $00
 string_lives: .byte "LIVES_", WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU_WIN", $00
+string_dialog_wk_cartridge: .byte "YOU_GOT_A_NEW", $0A
+                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte $0A
+                            .byte "WORKHOUSE_KEEPER", $00
 string_dialog_gi_cartridge: .byte "YOU_GOT_A_NEW", $0A
                             .byte "CARTRIDGE_OF_LEGEND", $0A
                             .byte $0A
                             .byte "GALAXY_INTRUDERS", $00
+string_dialog_mf_cartridge: .byte "YOU_GOT_A_NEW", $0A
+                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte $0A
+                            .byte "MINE_FINDER", $00
+string_dialog_rr_cartridge: .byte "YOU_GOT_A_NEW", $0A
+                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte $0A
+                            .byte "RIVER_RAY", $00
 string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
                          .byte "WAS_DEFEATED", $0A
                          .byte $0A
