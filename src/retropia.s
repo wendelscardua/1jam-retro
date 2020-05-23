@@ -1340,9 +1340,13 @@ skip_lives:
 .endproc
 
 DIALOG_DELAY=$04
+DIALOG_LAST_ROW=$07
 .proc main_dialog
   LDY #0
   LDA (dialog_string_ptr), Y
+  BEQ dialog_interaction
+  LDA dialog_current_row
+  CMP #DIALOG_LAST_ROW
   BEQ dialog_interaction
   INC frame_counter
   LDA frame_counter
@@ -1394,11 +1398,18 @@ linebreak:
 dialog_interaction:
   JSR readjoy
   LDA pressed_buttons
-  BEQ :+
-  ; TODO - hide text and quit dialog mode
+  BEQ no_buttons
+  ; TODO - hide text
+  LDA dialog_current_row
+  CMP #DIALOG_LAST_ROW
+  BEQ continue_dialog
   JSR end_display_dialog
   RTS
-:
+continue_dialog:
+  LDA #$00
+  STA dialog_current_row
+  JMP linebreak
+no_buttons:
   LDA #$00
   STA sprite_counter
   LDA nmis
@@ -4237,8 +4248,14 @@ string_gi_cartridge: .byte "YOU_GOT_A_NEW", $0A
                      .byte "CARTRIDGE_OF_LEGEND", $0A
                      .byte "GALAXY_INTRUDERS", $00
 string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
-                         .byte "WAS_DEFEATED", $0A, $0A
-                         .byte "OUR_HOPE_WAS_GONE", $00
+                         .byte "WAS_DEFEATED", $0A
+                         .byte $0A
+                         .byte "OUR_HOPE_WAS_GONE", $0A
+                         .byte $0A
+                         .byte $0A
+                         .byte $0A
+                         .byte "THAT_IS", $0A
+                         .byte "UNTIL_THE_NEXT_ONE", $0A
 inventory_mask_per_type:
         .byte $00 ; player
         .byte $00 ; vrissy
