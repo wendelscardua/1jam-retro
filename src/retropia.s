@@ -1342,11 +1342,13 @@ skip_lives:
 DIALOG_DELAY=$04
 DIALOG_LAST_ROW=$07
 .proc main_dialog
-  LDY #0
-  LDA (dialog_string_ptr), Y
-  BEQ dialog_interaction
   LDA dialog_current_row
   CMP #DIALOG_LAST_ROW
+  BEQ dialog_interaction
+  LDA dialog_current_row
+  BMI erasing_rows
+  LDY #0
+  LDA (dialog_string_ptr), Y
   BEQ dialog_interaction
   INC frame_counter
   LDA frame_counter
@@ -1375,13 +1377,13 @@ DIALOG_LAST_ROW=$07
   STA PPUSCROLL
 
 increment_pointers:
+  INC dialog_string_ptr
+  BNE increment_ppu
+  INC dialog_string_ptr+1
+increment_ppu:
   INC dialog_ppu_ptr
   BNE :+
   INC dialog_ppu_ptr+1
-:
-  INC dialog_string_ptr
-  BNE :+
-  INC dialog_string_ptr+1
 :
   RTS
 linebreak:
@@ -1405,10 +1407,42 @@ dialog_interaction:
   BEQ continue_dialog
   JSR end_display_dialog
   RTS
-continue_dialog:
+erasing_rows:
+  LDA dialog_current_row
+  EOR #$80
+  TAX
+  LDA PPUSTATUS
+  LDA window_ppu_addrs_h, X
+  STA PPUADDR
+  LDA window_ppu_addrs_l, X
+  CLC
+  ADC #$02
+  STA PPUADDR
+  LDX #$13
+  LDA #$60
+@erase_loop:
+  STA PPUDATA
+  DEX
+  BPL @erase_loop
+  LDA #$24
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
+  INC dialog_current_row
+  LDA dialog_current_row
+  CMP #$80 + DIALOG_LAST_ROW
+  BNE :+
   LDA #$00
   STA dialog_current_row
   JMP linebreak
+:
+  RTS
+continue_dialog:
+  LDA #$81
+  STA dialog_current_row
+  RTS
 no_buttons:
   LDA #$00
   STA sprite_counter
