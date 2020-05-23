@@ -3580,6 +3580,11 @@ no_new_barrier:
   .endrepeat
   BNE :+
   ; flag is gone, game over, you win!
+  LDA inventory
+  ORA #HAS_RR
+  STA inventory
+  LDA #$00
+  STA frame_counter
   LDA #game_states::rr_win
   STA game_state
 :
@@ -3686,6 +3691,8 @@ skip_draw_barrier:
 .endproc
 
 .proc rr_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$21
   STA ppu_addr_ptr+1
   LDA #$8C
@@ -3695,7 +3702,15 @@ skip_draw_barrier:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with swimming)
+  STA PPUSCROLL
+  STA PPUSCROLL
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
