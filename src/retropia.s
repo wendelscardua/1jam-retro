@@ -212,7 +212,7 @@ num_objects: .res 1
 objects: .tag Object
 dialog_string_ptr: .res 2
 dialog_ppu_ptr: .res 2
-dialog_next_state: .res 1
+dialog_callback: .res 2
 dialog_current_row: .res 1
 
 .segment "BSS"
@@ -1275,17 +1275,28 @@ skip_lives:
   RTS
 .endproc
 
-.macro DIALOG string_pointer, next_state
+.proc dialog_to_playing
+  LDA #game_states::main_playing
+  STA game_state
+  RTS
+.endproc
+
+.macro DIALOG string_pointer, callback
   LDA #<string_pointer
   STA dialog_string_ptr
   LDA #>string_pointer
   STA dialog_string_ptr+1
-  .ifblank next_state
-  LDA #game_states::main_playing
+  .ifblank callback
+  LDA #<(dialog_to_playing-1)
+  STA dialog_callback
+  LDA #>(dialog_to_playing-1)
+  STA dialog_callback+1
   .else
-  LDA next_state
+  LDA #<(callback-1)
+  STA dialog_callback
+  LDA #>(callback-1)
+  STA dialog_callback+1
   .endif
-  STA dialog_next_state
   JSR begin_display_dialog
 .endmacro
 
@@ -1321,8 +1332,10 @@ skip_lives:
 .proc end_display_dialog
   LDA #$00
   STA current_nametable
-  LDA dialog_next_state
-  STA game_state
+  LDA dialog_callback+1
+  PHA
+  LDA dialog_callback
+  PHA
   RTS
 .endproc
 
@@ -1382,7 +1395,8 @@ dialog_interaction:
   JSR readjoy
   LDA pressed_buttons
   BEQ :+
-  KIL ; TODO - hide text and quit dialog mode
+  ; TODO - hide text and quit dialog mode
+  JSR end_display_dialog
   RTS
 :
   LDA #$00
@@ -1568,7 +1582,7 @@ stop_blinking:
   JSR load_screen
   RTS
 game_over:
-  DIALOG string_dialog_game_over, #game_states::main_game_over
+  DIALOG string_dialog_game_over, start_game_setup ; TODO return to title
   RTS
 .endproc
 
