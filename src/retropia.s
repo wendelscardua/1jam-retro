@@ -4294,19 +4294,19 @@ string_game_over: .byte "GAME_OVER", $00
 string_lives: .byte "LIVES_", WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU_WIN", $00
 string_dialog_wk_cartridge: .byte "YOU_GOT_A_NEW", $0A
-                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte "CARTRIDGE_OF_LEGEND:", $0A
                             .byte $0A
                             .byte "WORKHOUSE_KEEPER", $00
 string_dialog_gi_cartridge: .byte "YOU_GOT_A_NEW", $0A
-                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte "CARTRIDGE_OF_LEGEND:", $0A
                             .byte $0A
                             .byte "GALAXY_INTRUDERS", $00
 string_dialog_mf_cartridge: .byte "YOU_GOT_A_NEW", $0A
-                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte "CARTRIDGE_OF_LEGEND:", $0A
                             .byte $0A
                             .byte "MINE_FINDER", $00
 string_dialog_rr_cartridge: .byte "YOU_GOT_A_NEW", $0A
-                            .byte "CARTRIDGE_OF_LEGEND", $0A
+                            .byte "CARTRIDGE_OF_LEGEND:", $0A
                             .byte $0A
                             .byte "RIVER_RAY", $00
 string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
