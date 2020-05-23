@@ -2616,6 +2616,11 @@ skip_draw_loop:
   ADC gamekid_ram+gi_var::total_enemies
   BNE :+
 
+  LDA inventory
+  ORA #HAS_GI
+  STA inventory
+  LDA #$00
+  STA frame_counter
   LDA #game_states::gi_win
   STA game_state
 
@@ -2624,6 +2629,8 @@ skip_draw_loop:
 .endproc
 
 .proc gi_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$21
   STA ppu_addr_ptr+1
   LDA #$AC
@@ -2633,7 +2640,13 @@ skip_draw_loop:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with fireball power)
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
