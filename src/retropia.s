@@ -185,6 +185,7 @@ nmis: .res 1
 old_nmis: .res 1
 args: .res 5
 game_state: .res 1
+lives: .res 1
 inventory: .res 1
 inventory_selection: .res 1
 current_nametable: .res 1
@@ -456,6 +457,8 @@ etc:
   STA inventory
   LDA #$01
   STA inventory_selection
+  LDA #$03
+  STA lives
   LDA #$00
   STA current_nametable
   JSR load_screen
@@ -1206,6 +1209,40 @@ skip_drawing:
 
   DEX
   BPL draw_elements_loop
+
+  ; display lives
+  LDA #<heart_sprite
+  STA addr_ptr
+  LDA #>heart_sprite
+  STA addr_ptr+1
+
+  LDA lives
+  BEQ skip_lives
+  STA temp_b
+  LDA #$0C
+  STA temp_x
+lives_loop:
+  LDA #$0C
+  STA temp_y
+  LDA nmis
+  AND #%11000
+  LSR
+  LSR
+  LSR
+  EOR #%11
+  CMP temp_b
+  BNE :+
+  LDA #$09
+  STA temp_y
+  :
+  JSR display_metasprite
+  CLC
+  LDA #$0A
+  ADC temp_x
+  STA temp_x
+  DEC temp_b
+  BNE lives_loop
+skip_lives:
 
   ; ensure we erase sprites if we lost a metasprite before
   LDX sprite_counter
@@ -3877,6 +3914,8 @@ rr_flag_sprite = metasprite_9_data
 
 cursor_up_sprite = metasprite_30_data
 cursor_down_sprite = metasprite_31_data
+
+heart_sprite = metasprite_32_data
 
 ; data fitting AnimData struct
 player_anim_data:
