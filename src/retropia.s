@@ -421,6 +421,23 @@ clear_ram:
   ; JSR FamiToneSfxInit
 
   ; TODO: change to title screen when available
+  JSR start_game_setup
+
+forever:
+  LDA nmis
+  CMP old_nmis
+  BEQ etc
+  STA old_nmis
+  ; new frame code
+  JSR rand
+  JSR game_state_handler
+  ; JSR FamiToneUpdate
+
+etc:
+  JMP forever
+.endproc
+
+.proc start_game_setup
   LDA #game_states::main_playing
   STA game_state
   LDA #1
@@ -437,20 +454,10 @@ clear_ram:
   STA objects+Object::sprite_toggle
   LDA #$00
   STA inventory
+  LDA #$01
+  STA inventory_selection
   JSR load_screen
-
-forever:
-  LDA nmis
-  CMP old_nmis
-  BEQ etc
-  STA old_nmis
-  ; new frame code
-  JSR rand
-  JSR game_state_handler
-  ; JSR FamiToneUpdate
-
-etc:
-  JMP forever
+  RTS
 .endproc
 
 .proc load_palettes
@@ -992,13 +999,28 @@ next:
 .endproc
 
 .proc start_selected_game
-  LDY inventory_selection
-  LDA inventory_mask_per_index, Y
+  LDA inventory_selection
   AND inventory
-  BEQ :+
-  LDA inventory_index_to_game_state, Y
-  STA game_state
+  BEQ return
+  LDA inventory_selection
+  CMP #HAS_WK
+  BNE :+
+  LDX #game_states::wk_booting_gamekid
 :
+  CMP #HAS_GI
+  BNE :+
+  LDX #game_states::gi_booting_gamekid
+:
+  CMP #HAS_MF
+  BNE :+
+  LDX #game_states::mf_booting_gamekid
+:
+  CMP #HAS_RR
+  BNE :+
+  LDX #game_states::rr_booting_gamekid
+:
+  STX game_state
+return:
   RTS
 .endproc
 
@@ -1216,19 +1238,19 @@ skip_drawing:
   LDA pressed_buttons
   AND #(BUTTON_UP | BUTTON_LEFT)
   BEQ :+
-  DEC inventory_selection
-  BPL :+
-  LDA #$3
+  LSR inventory_selection
+  BCC :+
+  LDA #%1000
   STA inventory_selection
 :
   LDA pressed_buttons
   AND #(BUTTON_DOWN | BUTTON_RIGHT)
   BEQ :+
-  INC inventory_selection
+  ASL inventory_selection
   LDA inventory_selection
-  CMP #$04
+  CMP #%10000
   BNE :+
-  LDA #$0
+  LDA #%0001
   STA inventory_selection
 :
 
@@ -1237,10 +1259,6 @@ skip_drawing:
   ; draw elements
   LDY #object_type::cartridge_wk
 loop:
-  LDA inventory_mask_per_type, Y
-  AND inventory
-  BEQ next
-
   TYA
   PHA
 
@@ -1261,6 +1279,10 @@ loop:
   ADC #$B0
   STA temp_y
 
+  LDA inventory_mask_per_type, Y
+  AND inventory
+  BEQ nextish
+
   LDA anim_data_ptr_l, Y
   STA addr_ptr
   LDA anim_data_ptr_h, Y
@@ -1279,8 +1301,45 @@ loop:
 
   PLA
   TAY
+  PHA
 
-next:
+nextish:
+
+  LDA inventory_mask_per_type, Y
+  AND inventory_selection
+  BEQ skip_cursor
+
+  LDA temp_x
+  CLC
+  ADC #$4
+  STA temp_x
+
+  LDA #$C0
+  CMP temp_y
+  BEQ cursor_down
+cursor_up:
+  LDA #<cursor_up_sprite
+  STA addr_ptr
+  LDA #>cursor_up_sprite
+  STA addr_ptr+1
+  LDA #$C8
+  STA temp_y
+  JMP draw_cursor
+cursor_down:
+  LDA #<cursor_down_sprite
+  STA addr_ptr
+  LDA #>cursor_down_sprite
+  STA addr_ptr+1
+  LDA #$B0
+  STA temp_y
+draw_cursor:
+  JSR display_metasprite
+
+skip_cursor:
+
+  PLA
+  TAY
+
   INY
   CPY #(object_type::cartridge_rr+1)
   BNE loop
@@ -3841,11 +3900,6 @@ inventory_mask_per_type:
 inventory_mask_per_index:
         .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
 
-inventory_index_to_game_state:
-        .byte game_states::wk_booting_gamekid
-        .byte game_states::gi_booting_gamekid
-        .byte game_states::mf_booting_gamekid
-        .byte game_states::rr_booting_gamekid
 
 screens_l:
         .byte $00 ; padding
