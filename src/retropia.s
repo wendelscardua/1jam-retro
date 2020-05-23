@@ -2052,11 +2052,36 @@ return:
 .endproc
 
 .proc quit_gamekid
-  LDA #game_states::main_playing
-  STA game_state
+  LDA game_state
+  PHA
+
   LDA #$00
   STA current_nametable
+  LDA #game_states::main_playing
+  STA game_state
+
   JSR load_screen
+
+  PLA
+  CMP #game_states::wk_win
+  BNE :+
+  DIALOG string_dialog_wk_win
+  RTS
+:
+  CMP #game_states::gi_win
+  BNE :+
+  DIALOG string_dialog_gi_win
+  RTS
+:
+  CMP #game_states::mf_win
+  BNE :+
+  DIALOG string_dialog_mf_win
+  RTS
+:
+  CMP #game_states::rr_win
+  BNE :+
+  DIALOG string_dialog_rr_win
+:
   RTS
 .endproc
 
@@ -4523,6 +4548,15 @@ string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
                          .byte "WAS_DEFEATED", $0A
                          .byte $0A
                          .byte "OUR_HOPE_IS_GONE", $00
+string_dialog_wk_win: .byte $00
+string_dialog_gi_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
+                      .byte $0A
+                      .byte "FIREBALL", $0A
+                      .byte $0A
+                      .byte "PRESS_A_TO_SHOOT", $00
+string_dialog_mf_win: .byte $00
+string_dialog_rr_win: .byte $00
+
 inventory_mask_per_type:
         .byte $00 ; player
         .byte $00 ; vrissy
