@@ -742,11 +742,6 @@ skip_second_bg:
   RTS
 .endproc
 
-.proc player_input
-  JSR readjoy
-  RTS
-.endproc
-
 .proc DEBUG_start
   LDA #%00010000
   STA PPUCTRL
@@ -977,6 +972,36 @@ next:
   RTS
 .endproc
 
+.proc close_inventory
+  LDA #game_states::main_playing
+  STA game_state
+  LDA #$0
+  STA current_nametable
+
+  ; hide all sprites
+  LDX #$00
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
+  RTS
+.endproc
+
+.proc start_selected_game
+  LDY inventory_selection
+  LDA inventory_mask_per_index, Y
+  AND inventory
+  BEQ :+
+  LDA inventory_index_to_game_state, Y
+  STA game_state
+:
+  RTS
+.endproc
+
 .proc main_playing
   ; save player position
   LDA objects+Object::xcoord
@@ -984,7 +1009,7 @@ next:
   LDA objects+Object::ycoord
   STA old_player_y
 
-  JSR player_input
+  JSR readjoy
   LDA pressed_buttons
   AND #BUTTON_SELECT
   BEQ :+
@@ -1174,6 +1199,38 @@ skip_drawing:
 
 .proc main_inventory
   ; player input
+  JSR readjoy
+
+  LDA pressed_buttons
+  AND #(BUTTON_SELECT | BUTTON_START | BUTTON_B)
+  BEQ :+
+  JSR close_inventory
+  RTS
+:
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  JSR start_selected_game
+  RTS
+:
+  LDA pressed_buttons
+  AND #(BUTTON_UP | BUTTON_LEFT)
+  BEQ :+
+  DEC inventory_selection
+  BPL :+
+  LDA #$3
+  STA inventory_selection
+:
+  LDA pressed_buttons
+  AND #(BUTTON_DOWN | BUTTON_RIGHT)
+  BEQ :+
+  INC inventory_selection
+  LDA inventory_selection
+  CMP #$04
+  BNE :+
+  LDA #$0
+  STA inventory_selection
+:
 
   LDA #$00
   STA sprite_counter
@@ -3778,7 +3835,14 @@ string_you_win: .byte "YOU", $5B, "WIN", $00
 inventory_mask_per_type:
         .byte $00 ; player
         .byte $00 ; vrissy
+inventory_mask_per_index:
         .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
+
+inventory_index_to_game_state:
+        .byte game_states::wk_booting_gamekid
+        .byte game_states::gi_booting_gamekid
+        .byte game_states::mf_booting_gamekid
+        .byte game_states::rr_booting_gamekid
 
 screens_l:
         .byte $00 ; padding
