@@ -4184,6 +4184,11 @@ heart_sprite = metasprite_32_data
 
 text_cursor_sprite = metasprite_33_data
 
+fireball_sprite_1 = metasprite_34_data
+fireball_sprite_2 = metasprite_35_data
+fireball_sprite_3 = metasprite_36_data
+fireball_sprite_4 = metasprite_37_data
+
 ; data fitting AnimData struct
 player_anim_data:
         .word metasprite_10_data, metasprite_11_data ; walking up
@@ -4205,6 +4210,10 @@ cartridge_mf_anim_data:
         .word metasprite_28_data, metasprite_28_data ; neutral
 cartridge_rr_anim_data:
         .word metasprite_29_data, metasprite_29_data ; neutral
+
+; note: fireballs aren't really objects
+fireball_anim_data:
+        .word fireball_sprite_1, fireball_sprite_2, fireball_sprite_3, fireball_sprite_4
 
 ; indexed by object type
 anim_data_ptr_l:
