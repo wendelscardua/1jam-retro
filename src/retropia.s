@@ -4569,7 +4569,7 @@ nametable_mf_title: .incbin "../assets/nametables/gamekid-titles/mf.rle"
 nametable_rr_title: .incbin "../assets/nametables/gamekid-titles/rr.rle"
 
 subgame_by_game_state:
-        .byte $00 ; main
+        .byte $00, $00, $00, $00, $00, $00 ; main
         .byte $01, $01, $01, $01, $01 ; WK
         .byte $02, $02, $02, $02, $02 ; GI
         .byte $03, $03, $03, $03, $03 ; MF
