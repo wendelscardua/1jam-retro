@@ -47,6 +47,14 @@ FT_DPCM_OFF= $c000
 ; game config
 
 GAMEKID_DELAY = 60
+HAS_WK =      %00000001
+HAS_GI =      %00000010
+HAS_MF =      %00000100
+HAS_RR =      %00001000
+FINISHED_WK = %00010000
+FINISHED_GI = %00100000
+FINISHED_MF = %01000000
+FINISHED_RR = %10000000
 
 .segment "ZEROPAGE"
 FT_TEMP: .res 3
@@ -73,7 +81,10 @@ oam_sprites:
 
 .enum game_states
   ; main game stuff
+  main_title
   main_playing
+  main_dialog
+  main_inventory
   ; wk = workhouse keeper (sokoban clone)
   wk_booting_gamekid
   wk_title
@@ -121,6 +132,10 @@ oam_sprites:
 .enum object_type
   player
   enemy_vrissy
+  cartridge_wk
+  cartridge_gi
+  cartridge_mf
+  cartridge_rr
 .endenum
 
 .enum direction
@@ -170,6 +185,8 @@ nmis: .res 1
 old_nmis: .res 1
 args: .res 5
 game_state: .res 1
+inventory: .res 1
+inventory_selection: .res 1
 current_nametable: .res 1
 current_screen: .res 1
 current_exits: .res 4 ; up, down, left, right
@@ -177,6 +194,8 @@ next_screen_direction: .res 1
 current_sub_level: .res 1
 frame_counter: .res 1
 sprite_counter: .res 1
+old_player_x: .res 1
+old_player_y: .res 1
 temp_a: .res 1
 temp_b: .res 1
 temp_x: .res 1
@@ -274,6 +293,13 @@ RR_FLAG_DELAY=180
 
 .macro KIL ; pseudo instruction to kill the program
   .byte $12
+.endmacro
+
+.macro VBLANK
+  .local vblankwait
+vblankwait:
+  BIT PPUSTATUS
+  BPL vblankwait
 .endmacro
 
 .macro save_regs
@@ -377,9 +403,7 @@ clear_ram:
   LDA #$C1
   STA rng_seed+1
 
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
+  VBLANK
 
   LDA #%10010000  ; turn on NMIs, sprites use first pattern table
   STA PPUCTRL
@@ -397,6 +421,23 @@ vblankwait:       ; wait for another vblank before continuing
   ; JSR FamiToneSfxInit
 
   ; TODO: change to title screen when available
+  JSR start_game_setup
+
+forever:
+  LDA nmis
+  CMP old_nmis
+  BEQ etc
+  STA old_nmis
+  ; new frame code
+  JSR rand
+  JSR game_state_handler
+  ; JSR FamiToneUpdate
+
+etc:
+  JMP forever
+.endproc
+
+.proc start_game_setup
   LDA #game_states::main_playing
   STA game_state
   LDA #1
@@ -411,20 +452,14 @@ vblankwait:       ; wait for another vblank before continuing
   STA objects+Object::direction
   LDA #$00
   STA objects+Object::sprite_toggle
+  LDA #$00
+  STA inventory
+  LDA #$01
+  STA inventory_selection
+  LDA #$00
+  STA current_nametable
   JSR load_screen
-
-forever:
-  LDA nmis
-  CMP old_nmis
-  BEQ etc
-  STA old_nmis
-  ; new frame code
-  JSR rand
-  JSR game_state_handler
-  ; JSR FamiToneUpdate
-
-etc:
-  JMP forever
+  RTS
 .endproc
 
 .proc load_palettes
@@ -596,6 +631,7 @@ end_of_objects_loop:
 .proc load_nametable
 ; expects rle_ptr to already point to rle data
 ; if second_rle_ptr is present, uses it to load second bg
+; if during main_playing, both bg are the same, but we draw a window on second one
   BIT PPUSTATUS
   LDA #%00010000  ; turn off NMIs
   STA PPUCTRL
@@ -610,21 +646,27 @@ end_of_objects_loop:
   INX
   BNE :-
 
+
+  LDA game_state
+  CMP #game_states::main_playing
+  BNE skip_bg_doubling
+  LDA rle_ptr
+  STA second_rle_ptr
+  LDA rle_ptr+1
+  STA second_rle_ptr+1
+skip_bg_doubling:
+
   ; read bg rle pointer and uncompress it
   save_regs
-:  ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL :-
+  VBLANK
   LDA #$20
   STA PPUADDR
   LDA #$00
   STA PPUADDR
   JSR unrle
+
   LDA second_rle_ptr
-  BEQ :++
-:  ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL :-
+  BEQ skip_second_bg
   LDA second_rle_ptr
   STA rle_ptr
   LDA #$00
@@ -633,17 +675,70 @@ end_of_objects_loop:
   STA rle_ptr+1
   LDA #$00
   STA second_rle_ptr+1
+
+  VBLANK
   LDA #$24
   STA PPUADDR
   LDA #$00
   STA PPUADDR
   JSR unrle
+
+  LDA game_state
+  CMP #game_states::main_playing
+  BNE skip_second_bg
+
+  VBLANK
+
+  LDY #$7
+rows_loop:
+  LDA window_ppu_addrs_h, Y
+  STA PPUADDR
+  LDA window_ppu_addrs_l, Y
+  STA PPUADDR
+
+  LDA window_ppu_left_tile, Y
+  STA PPUDATA
+
+  LDX #$15
+  LDA window_ppu_center_tile, Y
+tile_loop:
+  STA PPUDATA
+  DEX
+  BPL tile_loop
+
+  LDA window_ppu_right_tile, Y
+  STA PPUDATA
+
+  DEY
+  BPL rows_loop
+
+; color window tiles
+  LDA #$27
+  STA PPUADDR
+  LDA #$E9
+  STA PPUADDR
+  LDX #$5
 :
+  LDA #%01010101
+  STA PPUDATA
+  DEX
+  BPL :-
+
+  LDA #$27
+  STA PPUADDR
+  LDA #$F1
+  STA PPUADDR
+  LDX #$5
+:
+  LDA #%01010101
+  STA PPUDATA
+  DEX
+  BPL :-
+
+skip_second_bg:
   restore_regs
 
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
+  VBLANK
 
   JSR load_palettes
 
@@ -653,11 +748,6 @@ vblankwait:       ; wait for another vblank before continuing
   LDA #%00011110  ; turn on screen
   STA PPUMASK
 
-  RTS
-.endproc
-
-.proc player_input
-  JSR readjoy
   RTS
 .endproc
 
@@ -678,10 +768,7 @@ vblankwait:       ; wait for another vblank before continuing
 .endproc
 
 .proc DEBUG_end
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
-
+  VBLANK
   BIT PPUSTATUS
   LDA #%00011110  ; turn on screen
   STA PPUMASK
@@ -729,6 +816,8 @@ vblankwait:       ; wait for another vblank before continuing
 ; these act like printf, displaying the corresponding digit instead
 WRITE_X_SYMBOL = $FE
 
+LINEBREAK_SYMBOL = $0A
+
 .proc write_tiles
   ; write tiles on background
   ; addr_ptr - point to string starting point (strings end with $00)
@@ -744,6 +833,19 @@ WRITE_X_SYMBOL = $FE
 writing_loop:
   LDA (addr_ptr), Y
   BEQ exit
+  CMP #LINEBREAK_SYMBOL
+  BNE :+
+  LDA #$20
+  CLC
+  ADC ppu_addr_ptr
+  STA ppu_addr_ptr
+  LDA #$00
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+  STA PPUADDR
+  LDA ppu_addr_ptr
+  STA PPUADDR
+:
   CMP #WRITE_X_SYMBOL
   BNE write_tile
   TXA
@@ -806,8 +908,7 @@ load:
   RTS
 .endproc
 
-.proc check_wall_collision
-  ; returns 1 in A if player hitbox intersect with any wall
+.proc prepare_player_hitbox
   CLC
   LDA hitbox_x1
   ADC objects+Object::xcoord
@@ -824,7 +925,12 @@ load:
   LDA hitbox_y2
   ADC objects+Object::ycoord
   STA temp_hitbox_a+Box::y2
+  RTS
+.endproc
 
+.proc check_wall_collision
+  ; returns 1 in A if player hitbox intersect with any wall
+  JSR prepare_player_hitbox
   LDX num_walls
   DEX
 loop:
@@ -851,9 +957,93 @@ next:
   RTS
 .endproc
 
-.proc main_playing
-  JSR player_input
+.proc main_title
+  KIL
+  RTS
+.endproc
 
+.proc open_inventory
+  LDA #game_states::main_inventory
+  STA game_state
+  LDA #$1
+  STA current_nametable
+
+  ; hide all sprites (TODO: hide only above window?)
+  LDX #$00
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
+  RTS
+.endproc
+
+.proc close_inventory
+  LDA #game_states::main_playing
+  STA game_state
+  LDA #$0
+  STA current_nametable
+
+  ; hide all sprites
+  LDX #$00
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
+  RTS
+.endproc
+
+.proc start_selected_game
+  LDA inventory_selection
+  AND inventory
+  BEQ return
+  LDA inventory_selection
+  CMP #HAS_WK
+  BNE :+
+  LDX #game_states::wk_booting_gamekid
+:
+  CMP #HAS_GI
+  BNE :+
+  LDX #game_states::gi_booting_gamekid
+:
+  CMP #HAS_MF
+  BNE :+
+  LDX #game_states::mf_booting_gamekid
+:
+  CMP #HAS_RR
+  BNE :+
+  LDX #game_states::rr_booting_gamekid
+:
+  STX game_state
+  LDA #$00
+  STA current_nametable
+  LDA #$00
+  STA frame_counter
+return:
+  RTS
+.endproc
+
+.proc main_playing
+  ; save player position
+  LDA objects+Object::xcoord
+  STA old_player_x
+  LDA objects+Object::ycoord
+  STA old_player_y
+
+  JSR readjoy
+  LDA pressed_buttons
+  AND #BUTTON_SELECT
+  BEQ :+
+  JSR open_inventory
+  RTS
+:
   LDA buttons
   AND #BUTTON_UP
   BEQ :+
@@ -932,9 +1122,23 @@ move_right:
 update_elements_loop:
   LDA objects+Object::type, X
   CMP #object_type::enemy_vrissy
-  BNE :+
+  BEQ @animate_vrissy
+  CMP #object_type::cartridge_wk
+  BEQ @animate_cartridge
+  CMP #object_type::cartridge_gi
+  BEQ @animate_cartridge
+  CMP #object_type::cartridge_mf
+  BEQ @animate_cartridge
+  CMP #object_type::cartridge_rr
+  BEQ @animate_cartridge
+  JMP next
+@animate_vrissy:
   JSR update_enemy_vrissy
-:
+  JMP next
+@animate_cartridge:
+  JSR animate_cartridge
+  JMP next
+next:
   DEX
   BNE update_elements_loop ; X = 0 is player object
 skip_update_elements:
@@ -975,17 +1179,265 @@ draw_elements_loop:
   PLA
   STA addr_ptr
 
+  ; check collision before drawing
+  CPX #$00
+  BEQ skip_collision
+
+  ; hide object if in inventory
+  LDY objects+Object::type, X
+  LDA inventory_mask_per_type, Y
+  AND inventory
+  BNE skip_drawing
+
+  JSR handle_object_player_collision
+skip_collision:
+  ; end collision check
+
   LDA objects+Object::xcoord, X
   STA temp_x
   LDA objects+Object::ycoord, X
   STA temp_y
   JSR display_metasprite
+
+skip_drawing:
   ; restore X
   PLA
   TAX
+
   DEX
   BPL draw_elements_loop
 
+  ; ensure we erase sprites if we lost a metasprite before
+  LDX sprite_counter
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+
+  RTS
+.endproc
+
+.proc main_dialog
+  KIL
+  RTS
+.endproc
+
+.proc main_inventory
+  ; player input
+  JSR readjoy
+
+  LDA pressed_buttons
+  AND #(BUTTON_SELECT | BUTTON_START | BUTTON_B)
+  BEQ :+
+  JSR close_inventory
+  RTS
+:
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  JSR start_selected_game
+  RTS
+:
+  LDA pressed_buttons
+  AND #(BUTTON_UP | BUTTON_LEFT)
+  BEQ :+
+  LSR inventory_selection
+  BCC :+
+  LDA #%1000
+  STA inventory_selection
+:
+  LDA pressed_buttons
+  AND #(BUTTON_DOWN | BUTTON_RIGHT)
+  BEQ :+
+  ASL inventory_selection
+  LDA inventory_selection
+  CMP #%10000
+  BNE :+
+  LDA #%0001
+  STA inventory_selection
+:
+
+  LDA #$00
+  STA sprite_counter
+  ; draw elements
+  LDY #object_type::cartridge_wk
+loop:
+  TYA
+  PHA
+
+  ASL
+  ASL
+  ASL
+  ASL
+  PHA
+  ASL
+
+  CLC
+  ADC #$08
+  STA temp_x
+
+  PLA
+  AND #%10000
+  CLC
+  ADC #$B0
+  STA temp_y
+
+  LDA inventory_mask_per_type, Y
+  AND inventory
+  BEQ nextish
+
+  LDA anim_data_ptr_l, Y
+  STA addr_ptr
+  LDA anim_data_ptr_h, Y
+  STA addr_ptr+1
+
+  LDY #$00
+  LDA (addr_ptr),Y
+  PHA
+  INY
+  LDA (addr_ptr),Y
+  STA addr_ptr+1
+  PLA
+  STA addr_ptr
+
+  JSR display_metasprite
+
+  PLA
+  TAY
+  PHA
+
+nextish:
+
+  LDA inventory_mask_per_type, Y
+  AND inventory_selection
+  BEQ skip_cursor
+
+  LDA temp_x
+  CLC
+  ADC #$4
+  STA temp_x
+
+  LDA #$C0
+  CMP temp_y
+  BEQ cursor_down
+cursor_up:
+  LDA #<cursor_up_sprite
+  STA addr_ptr
+  LDA #>cursor_up_sprite
+  STA addr_ptr+1
+  LDA #$C8
+  STA temp_y
+  JMP draw_cursor
+cursor_down:
+  LDA #<cursor_down_sprite
+  STA addr_ptr
+  LDA #>cursor_down_sprite
+  STA addr_ptr+1
+  LDA #$B0
+  STA temp_y
+draw_cursor:
+  JSR display_metasprite
+
+skip_cursor:
+
+  PLA
+  TAY
+
+  INY
+  CPY #(object_type::cartridge_rr+1)
+  BNE loop
+
+  RTS
+.endproc
+
+.proc handle_object_player_collision
+  ; input: X = index of object
+  ; cobbles Y
+  JSR prepare_player_hitbox
+
+  LDY objects+Object::type, X
+
+  CLC
+  LDA hitbox_x1, Y
+  ADC objects+Object::xcoord, X
+  STA temp_hitbox_b+Box::x1
+  CLC
+  LDA hitbox_y1, Y
+  ADC objects+Object::ycoord, X
+  STA temp_hitbox_b+Box::y1
+  CLC
+  LDA hitbox_x2, Y
+  ADC objects+Object::xcoord, X
+  STA temp_hitbox_b+Box::x2
+  CLC
+  LDA hitbox_y2, Y
+  ADC objects+Object::ycoord, X
+  STA temp_hitbox_b+Box::y2
+
+  JSR temp_hitbox_collision
+  BEQ return
+
+  CPY #object_type::enemy_vrissy
+  BEQ @enemy_vrissy
+  CPY #object_type::cartridge_wk
+  BEQ @cartridge_wk
+  CPY #object_type::cartridge_gi
+  BEQ @cartridge_gi
+  CPY #object_type::cartridge_mf
+  BEQ @cartridge_mf
+  CPY #object_type::cartridge_rr
+  BEQ @cartridge_rr
+  KIL ; not yet implemented
+@enemy_vrissy:
+  ; TODO: death
+  KIL
+  JMP return
+@cartridge_wk:
+  LDA inventory
+  ORA #HAS_WK
+  STA inventory
+  JMP return
+@cartridge_gi:
+  LDA inventory
+  ORA #HAS_GI
+  STA inventory
+  JMP return
+@cartridge_mf:
+  LDA inventory
+  ORA #HAS_MF
+  STA inventory
+  JMP return
+@cartridge_rr:
+  LDA inventory
+  ORA #HAS_RR
+  STA inventory
+  JMP return
+return:
+  RTS
+.endproc
+
+.proc animate_cartridge
+  INC objects+Object::sprite_toggle, X
+  LDA objects+Object::sprite_toggle, X
+  AND #%1111
+  BNE :+
+  LDA objects+Object::sprite_toggle, X
+  AND #%10000
+  BEQ up
+  LDA objects+Object::ycoord, X
+  CLC
+  ADC #4
+  STA objects+Object::ycoord, X
+  JMP :+
+up:
+  LDA objects+Object::ycoord, X
+  SEC
+  SBC #4
+  STA objects+Object::ycoord, X
+:
   RTS
 .endproc
 
@@ -1089,6 +1541,24 @@ return:
   RTS
 :
   LDA #$01
+  RTS
+.endproc
+
+.proc quit_gamekid
+  LDA #game_states::main_playing
+  STA game_state
+  LDA #$00
+  STA current_nametable
+  JSR load_screen
+  RTS
+.endproc
+
+.proc check_quitting_gamekid
+  LDA pressed_buttons
+  AND #(BUTTON_SELECT | BUTTON_START)
+  BEQ :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
@@ -1398,6 +1868,7 @@ return:
   BPL :-
 
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA pressed_buttons
   AND #BUTTON_B
   BEQ :++
@@ -1566,6 +2037,9 @@ after_drawing:
   STA game_state
   JMP return
 win:
+  LDA inventory
+  ORA #FINISHED_WK
+  STA inventory
   LDA #game_states::wk_win
   STA game_state
   LDA #$00
@@ -1591,6 +2065,8 @@ return:
 .endproc
 
 .proc wk_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$AC
   STA ppu_addr_ptr
   LDA current_nametable
@@ -1604,7 +2080,15 @@ return:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with push power)
+  STA PPUSCROLL
+  STA PPUSCROLL
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
@@ -1934,6 +2418,7 @@ return:
 
 .proc gi_playing
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA buttons
   AND #BUTTON_LEFT
   BEQ :+
@@ -2131,6 +2616,11 @@ skip_draw_loop:
   ADC gamekid_ram+gi_var::total_enemies
   BNE :+
 
+  LDA inventory
+  ORA #FINISHED_GI
+  STA inventory
+  LDA #$00
+  STA frame_counter
   LDA #game_states::gi_win
   STA game_state
 
@@ -2139,6 +2629,8 @@ skip_draw_loop:
 .endproc
 
 .proc gi_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$21
   STA ppu_addr_ptr+1
   LDA #$AC
@@ -2148,7 +2640,15 @@ skip_draw_loop:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with fireball power)
+  STA PPUSCROLL
+  STA PPUSCROLL
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
@@ -2560,9 +3060,7 @@ draw_tile:
   INC ppu_addr_ptr+1
 :
 
-vblankwait:       ; wait for another vblank before continuing
-  BIT PPUSTATUS
-  BPL vblankwait
+  VBLANK
 
   LDA ppu_addr_ptr+1
   STA PPUADDR
@@ -2604,6 +3102,7 @@ vblankwait:       ; wait for another vblank before continuing
 
 .proc mf_playing
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA pressed_buttons
   AND #BUTTON_LEFT
   BEQ :+
@@ -2659,6 +3158,11 @@ vblankwait:       ; wait for another vblank before continuing
   LDA gamekid_ram+mf_var::opened_cells
   CMP #(.sizeof(mf_var::table) - MF_BOMBS)
   BNE :+
+  LDA inventory
+  ORA #FINISHED_MF
+  STA inventory
+  LDA #$00
+  STA frame_counter
   LDA #game_states::mf_win
   STA game_state
 :
@@ -2704,6 +3208,8 @@ draw_cursor:
 .endproc
 
 .proc mf_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$20
   STA ppu_addr_ptr+1
   LDA #$CC
@@ -2713,7 +3219,15 @@ draw_cursor:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with bomb)
+  STA PPUSCROLL
+  STA PPUSCROLL
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
@@ -2947,6 +3461,7 @@ return:
 
 .proc rr_playing
   JSR readjoy
+  JSR check_quitting_gamekid
   LDA pressed_buttons
   AND #BUTTON_UP
   BEQ :+
@@ -3065,6 +3580,11 @@ no_new_barrier:
   .endrepeat
   BNE :+
   ; flag is gone, game over, you win!
+  LDA inventory
+  ORA #FINISHED_RR
+  STA inventory
+  LDA #$00
+  STA frame_counter
   LDA #game_states::rr_win
   STA game_state
 :
@@ -3171,6 +3691,8 @@ skip_draw_barrier:
 .endproc
 
 .proc rr_win
+  LDA frame_counter
+  BNE wait_to_return
   LDA #$21
   STA ppu_addr_ptr+1
   LDA #$8C
@@ -3180,7 +3702,15 @@ skip_draw_barrier:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
-  KIL ; TODO - return to main game (with swimming)
+  STA PPUSCROLL
+  STA PPUSCROLL
+wait_to_return:
+  INC frame_counter
+  LDA #GAMEKID_DELAY
+  CMP frame_counter
+  BNE :+
+  JSR quit_gamekid
+:
   RTS
 .endproc
 
@@ -3273,7 +3803,10 @@ return:
 .segment "RODATA"
 
 game_state_handlers_l:
+  .byte <(main_title-1)
   .byte <(main_playing-1)
+  .byte <(main_dialog-1)
+  .byte <(main_inventory-1)
   .byte <(wk_booting_gamekid-1)
   .byte <(wk_title-1)
   .byte <(wk_load_next_level-1)
@@ -3296,7 +3829,10 @@ game_state_handlers_l:
   .byte <(rr_lose-1)
 
 game_state_handlers_h:
+  .byte >(main_title-1)
   .byte >(main_playing-1)
+  .byte >(main_dialog-1)
+  .byte >(main_inventory-1)
   .byte >(wk_booting_gamekid-1)
   .byte >(wk_title-1)
   .byte >(wk_load_next_level-1)
@@ -3339,6 +3875,9 @@ rr_barrier_sprite = metasprite_7_data
 rr_tree_sprite = metasprite_8_data
 rr_flag_sprite = metasprite_9_data
 
+cursor_up_sprite = metasprite_30_data
+cursor_down_sprite = metasprite_31_data
+
 ; data fitting AnimData struct
 player_anim_data:
         .word metasprite_10_data, metasprite_11_data ; walking up
@@ -3352,30 +3891,101 @@ enemy_vrissy_anim_data:
         .word metasprite_22_data, metasprite_23_data ; walking left
         .word metasprite_24_data, metasprite_25_data ; walking right
 
+cartridge_wk_anim_data:
+        .word metasprite_26_data, metasprite_26_data ; neutral
+cartridge_gi_anim_data:
+        .word metasprite_27_data, metasprite_27_data ; neutral
+cartridge_mf_anim_data:
+        .word metasprite_28_data, metasprite_28_data ; neutral
+cartridge_rr_anim_data:
+        .word metasprite_29_data, metasprite_29_data ; neutral
+
 ; indexed by object type
 anim_data_ptr_l:
         .byte <player_anim_data
         .byte <enemy_vrissy_anim_data
+        .byte <cartridge_wk_anim_data
+        .byte <cartridge_gi_anim_data
+        .byte <cartridge_mf_anim_data
+        .byte <cartridge_rr_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
         .byte >enemy_vrissy_anim_data
+        .byte >cartridge_wk_anim_data
+        .byte >cartridge_gi_anim_data
+        .byte >cartridge_mf_anim_data
+        .byte >cartridge_rr_anim_data
 
 ; indexed by object type
-;              pl, vr
+;              pl,  vr,  cartridges        , tbd
 hitbox_x1:
-        .byte $03, $02
+        .byte $03, $02, $00, $00, $00, $00
 hitbox_y1:
-        .byte $00, $02
+        .byte $00, $02, $00, $00, $00, $00
 hitbox_x2:
-        .byte $0C, $0D
+        .byte $0C, $0D, $0F, $0F, $0F, $0F
 hitbox_y2:
-        .byte $0F, $0D
+        .byte $0F, $0D, $0F, $0F, $0F, $0F
 
-
+window_ppu_addrs_l:
+        .byte $84
+        .byte $A4
+        .byte $C4
+        .byte $E4
+        .byte $04
+        .byte $24
+        .byte $44
+        .byte $64
+window_ppu_addrs_h:
+        .byte $26
+        .byte $26
+        .byte $26
+        .byte $26
+        .byte $27
+        .byte $27
+        .byte $27
+        .byte $27
+window_ppu_left_tile:
+        .byte $84
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $94
+        .byte $A4
+window_ppu_center_tile:
+        .byte $85
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $5B
+        .byte $A5
+window_ppu_right_tile:
+        .byte $86
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $96
+        .byte $A6
+window_ppu_palette_ptr_l:
+        .byte $E9, $EA, $EB, $EC, $ED, $EE
+        .byte $F1, $F2, $F3, $F4, $F5, $F6
 strings:
 string_game_over: .byte "GAME", $5B, "OVER", $00
 string_lives: .byte "LIVES", $5B, WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU", $5B, "WIN", $00
+
+inventory_mask_per_type:
+        .byte $00 ; player
+        .byte $00 ; vrissy
+inventory_mask_per_index:
+        .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
+
 
 screens_l:
         .byte $00 ; padding
@@ -3422,7 +4032,22 @@ screens_h:
 screen_1_data:
         .word nametable_screen_1
         .byte $0C, $06, $04, $02
-        .byte $00, $00
+        .byte $00
+        .ifdef DEBUG
+        .byte object_type::cartridge_wk, $30, $30, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::cartridge_gi, $D0, $30, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::cartridge_mf, $30, $C0, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::cartridge_rr, $D0, $C0, direction::up
+        .word $0000
+        .byte $00
+        .endif
+        .byte $00
 screen_2_data:
         .word nametable_screen_2
         .byte $00, $00, $01, $03
@@ -3456,9 +4081,13 @@ screen_2_vrissy_2_code:
         .byte $00
 
 screen_3_data:
-        .word nametable_screen_todo
+        .word nametable_screen_3
         .byte $00, $00, $02, $00
-        .byte $00, $00
+        .byte $00 ; end of walls
+        .byte object_type::cartridge_gi, $B0, $70, direction::up
+        .word $0000
+        .byte $00
+        .byte $00 ; end of objects
 screen_4_data:
         .word nametable_screen_todo
         .byte $00, $00, $05, $01
@@ -3596,6 +4225,8 @@ rr_barrier_transitions:
 
 nametable_screen_1: .incbin "../assets/nametables/screens/screen-1.rle"
 nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
+nametable_screen_3: .incbin "../assets/nametables/screens/screen-3.rle"
+
 nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
 nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
