@@ -2038,7 +2038,7 @@ after_drawing:
   JMP return
 win:
   LDA inventory
-  ORA #HAS_WK
+  ORA #FINISHED_WK
   STA inventory
   LDA #game_states::wk_win
   STA game_state
@@ -2617,7 +2617,7 @@ skip_draw_loop:
   BNE :+
 
   LDA inventory
-  ORA #HAS_GI
+  ORA #FINISHED_GI
   STA inventory
   LDA #$00
   STA frame_counter
@@ -3159,7 +3159,7 @@ draw_tile:
   CMP #(.sizeof(mf_var::table) - MF_BOMBS)
   BNE :+
   LDA inventory
-  ORA #HAS_MF
+  ORA #FINISHED_MF
   STA inventory
   LDA #$00
   STA frame_counter
@@ -3581,7 +3581,7 @@ no_new_barrier:
   BNE :+
   ; flag is gone, game over, you win!
   LDA inventory
-  ORA #HAS_RR
+  ORA #FINISHED_RR
   STA inventory
   LDA #$00
   STA frame_counter
