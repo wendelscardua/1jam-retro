@@ -4748,7 +4748,7 @@ screens_h:
         ;   [object type] [x] [y] [direction] [rom ptr] [ram value]
         ;   (ends with object type == 0)
 screen_1_data:
-        .word nametable_oooo
+        .word nametable_screen_oooo
         .byte $0C, $06, $04, $02
         .byte $00
         .ifdef DEBUG
@@ -4799,7 +4799,7 @@ screen_2_vrissy_2_code:
         .byte $00
 
 screen_3_data:
-        .word nametable_screen_3
+        .word nametable_screen_ccoc
         .byte $00, $00, $02, $00
         .byte $00 ; end of walls
         .byte object_type::cartridge_gi, $B0, $70, direction::up
@@ -4957,9 +4957,9 @@ rr_barrier_transitions:
         .byte %00000 ; from 11111 (victory flag)
 
 nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
-nametable_screen_3: .incbin "../assets/nametables/screens/screen-3.rle"
 nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
-nametable_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
+nametable_screen_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
+nametable_screen_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
 
 nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
