@@ -1906,6 +1906,8 @@ collided:
   BEQ @cartridge_rr
   CPY #object_type::pushable_block
   BEQ @pushable_block
+  CPY #object_type::breakable_wall
+  BEQ @breakable_wall
   KIL ; not yet implemented
 @enemy_vrissy:
   JSR damage_player
@@ -1936,6 +1938,12 @@ collided:
   RTS
 @pushable_block:
   JSR push_block
+  RTS
+@breakable_wall:
+  LDA old_player_x
+  STA objects+Object::xcoord
+  LDA old_player_y
+  STA objects+Object::ycoord
   RTS
 .endproc
 
