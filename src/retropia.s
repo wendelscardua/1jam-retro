@@ -4873,9 +4873,13 @@ screen_7_data:
         .byte $00
         .byte $00 ; end of objects
 screen_8_data:
-        .word nametable_screen_todo
+        .word nametable_screen_ccco
         .byte $00, $00, $00, $06
-        .byte $00, $00
+        .byte $00 ; end of walls
+        .byte object_type::cartridge_mf, $98, $C0, direction::up
+        .word $0000
+        .byte $00
+        .byte $00 ; end of objects
 screen_9_data:
         .word nametable_screen_todo
         .byte $0A, $01, $00, $00
