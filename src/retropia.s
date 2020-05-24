@@ -176,6 +176,12 @@ MAX_OBJECTS=10
 ; - pushable block -> can be pushed between two locations
 ; rom: (target-x-left-or-y-up target-x-right-or-y-down)
 ; ram: boolean-pushed
+; - breakable wall -> can be destroyed by bombs
+; rom: ignored
+; ram: ignored
+; - bomb -> destroys walls after a few seconds
+; rom: ignored
+; ram: countdown to explode
 
 .importzp rng_seed
 .importzp buttons
@@ -4550,9 +4556,6 @@ fireball_sprite_2 = metasprite_35_data
 fireball_sprite_3 = metasprite_36_data
 fireball_sprite_4 = metasprite_37_data
 
-breakable_wall_sprite = metasprite_39_data
-bomb_sprite = metasprite_40_data
-
 ; data fitting AnimData struct
 player_anim_data:
         .word metasprite_10_data, metasprite_11_data ; walking up
@@ -4872,7 +4875,11 @@ screen_6_data:
 
         .byte object_type::enemy_vrissy, $C8, $88, direction::left
         .word screen_6_vrissies_code ; reuse same code
-        .byte $02
+        .byte $02 ; offset
+
+        .byte object_type::breakable_wall, $40, $90, direction::up
+        .word $0000
+        .byte $00
 
         .byte $00 ; end of objects
 screen_6_block_1_code:
