@@ -4718,9 +4718,6 @@ screens_l:
         .byte <screen_9_data
         .byte <screen_A_data
         .byte <screen_B_data
-        .byte <screen_C_data
-        .byte <screen_D_data
-        .byte <screen_E_data
 screens_h:
         .byte $00 ; padding
         .byte >screen_1_data
@@ -4734,9 +4731,6 @@ screens_h:
         .byte >screen_9_data
         .byte >screen_A_data
         .byte >screen_B_data
-        .byte >screen_C_data
-        .byte >screen_D_data
-        .byte >screen_E_data
 
         ; screen data format:
         ; pointer to rle bg nametable
@@ -4749,7 +4743,7 @@ screens_h:
         ;   (ends with object type == 0)
 screen_1_data:
         .word nametable_screen_oooo
-        .byte $0C, $06, $04, $02
+        .byte $09, $06, $04, $02
         .byte $00
         .ifdef DEBUG
         .byte object_type::cartridge_wk, $30, $30, direction::up
@@ -4833,42 +4827,29 @@ screen_5_data:
         .word $0000
         .byte $00
         .byte $00 ; end of objects
-
 screen_6_data:
         .word nametable_screen_todo
-        .byte $01, $07, $00, $00
+        .byte $01, $00, $08, $07
         .byte $00, $00
 screen_7_data:
         .word nametable_screen_todo
-        .byte $06, $00, $0A, $08
+        .byte $00, $00, $06, $00
         .byte $00, $00
 screen_8_data:
         .word nametable_screen_todo
-        .byte $00, $00, $07, $09
+        .byte $00, $00, $00, $06
         .byte $00, $00
 screen_9_data:
         .word nametable_screen_todo
-        .byte $00, $00, $08, $00
+        .byte $0A, $01, $00, $00
         .byte $00, $00
 screen_A_data:
         .word nametable_screen_todo
-        .byte $00, $00, $0B, $07
+        .byte $0B, $00, $00, $00
         .byte $00, $00
 screen_B_data:
         .word nametable_screen_todo
-        .byte $00, $00, $00, $0A
-        .byte $00, $00
-screen_C_data:
-        .word nametable_screen_todo
-        .byte $0D, $01, $00, $03
-        .byte $00, $00
-screen_D_data:
-        .word nametable_screen_todo
-        .byte $0E, $0C, $00, $00
-        .byte $00, $00
-screen_E_data:
-        .word nametable_screen_todo
-        .byte $00, $0D, $00, $00
+        .byte $00, $0A, $00, $00
         .byte $00, $00
 
 wk_levels:
