@@ -227,6 +227,7 @@ fireball_direction: .res 1
 bomb_x: .res 1
 bomb_y: .res 1
 bomb_countdown: .res 1
+swimming: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -980,6 +981,8 @@ load:
   ; returns 1 in A if player hitbox intersect with any wall
   ; returns 1 in Y if player is swimming
   JSR prepare_player_hitbox
+  LDA #0
+  STA swimming
   LDX num_walls
   DEX
 loop:
@@ -997,8 +1000,19 @@ loop:
   STX temp_b
   debugOut {"Collision, wall index = ", fDec8{temp_b}}
   .endif
+  LDA wall_watery, X
+  BEQ normal_collision
+  ; on water, check if player can swim
+  LDA inventory
+  AND #FINISHED_RR
+  BEQ normal_collision
   LDA #1
-  RTS ; A = 1
+  STA swimming
+  LDA #0
+  RTS ; start swimming
+normal_collision:
+  LDA #1
+  RTS
 next:
   DEX
   BPL loop
