@@ -139,7 +139,6 @@ oam_sprites:
   cartridge_rr
   pushable_block
   breakable_wall
-  bomb
 .endenum
 
 .enum direction
@@ -179,9 +178,6 @@ MAX_OBJECTS=10
 ; - breakable wall -> can be destroyed by bombs
 ; rom: ignored
 ; ram: ignored
-; - bomb -> destroys walls after a few seconds
-; rom: ignored
-; ram: countdown to explode
 
 .importzp rng_seed
 .importzp buttons
@@ -228,6 +224,9 @@ dialog_current_row: .res 1
 fireball_x: .res 1
 fireball_y: .res 1
 fireball_direction: .res 1
+bomb_x: .res 1
+bomb_y: .res 1
+bomb_countdown: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -524,11 +523,14 @@ etc:
   LDA objects+Object::ycoord
   STA entrance_player_y
 
-  ; hide any lost fireballs
+  ; hide any lost fireballs / bombs
   LDA #$00
   STA fireball_x
   STA fireball_y
   STA fireball_direction
+  STA bomb_x
+  STA bomb_y
+  STA bomb_countdown
 
   ; loads current screen for main game
   LDX current_screen
@@ -1099,6 +1101,12 @@ return:
   JSR shoot_fireball
   RTS
 :
+  LDA pressed_buttons
+  AND #BUTTON_B
+  BEQ :+
+  JSR drop_bomb
+  RTS
+:
   LDA buttons
   AND #BUTTON_UP
   BEQ :+
@@ -1209,6 +1217,12 @@ skip_update_elements:
   JSR update_fireball
 :
 
+  ; maybe update bomb
+  LDA bomb_x
+  BEQ :+
+  JSR update_bomb
+:
+
   ; draw elements
 draw_elements:
   LDA #0
@@ -1286,27 +1300,15 @@ skip_drawing:
 
   ; maybe draw fireball
   LDA fireball_x
-  BEQ skip_fireball
+  BEQ :+
+  JSR draw_fireball
+:
 
-  STA temp_x
-  LDA fireball_y
-  STA temp_y
-
-  LDA nmis
-  AND #%1100
-  LSR
-  LSR
-  TAX
-
-  LDA fireball_sprites_l, X
-  STA addr_ptr
-  LDA fireball_sprites_h, X
-  STA addr_ptr+1
-
-  JSR display_metasprite
-
-
-skip_fireball:
+  ; maybe draw bomb
+  LDA bomb_x
+  BEQ :+
+  JSR draw_bomb
+:
 
   ; display lives
   LDA #<heart_sprite
@@ -1371,6 +1373,25 @@ skip_lives:
   STA fireball_y
   LDA objects+Object::direction
   STA fireball_direction
+  RTS
+.endproc
+
+.proc drop_bomb
+  LDA inventory
+  AND #FINISHED_MF
+  BNE :+
+  RTS
+:
+  LDA bomb_x
+  BEQ :+
+  RTS
+:
+  LDA objects+Object::xcoord
+  STA bomb_x
+  LDA objects+Object::ycoord
+  STA bomb_y
+  LDA #180
+  STA bomb_countdown
   RTS
 .endproc
 
@@ -1476,6 +1497,18 @@ enemy_collision:
   BCS @next
 
   ; delete fireball and object
+  JSR delete_nth_object
+  JMP delete_fireball
+@next:
+  DEX
+  BPL @loop
+
+  RTS
+.endproc
+
+.proc delete_nth_object
+  ; assumes X is the object index
+  ; cobbles Y
   DEC num_objects
   CPX num_objects
   BEQ :+
@@ -1497,11 +1530,118 @@ enemy_collision:
   LDA objects+Object::ram, Y
   STA objects+Object::ram, X
 :
-  JMP delete_fireball
+  RTS
+.endproc
+
+.proc update_bomb
+  LDA bomb_countdown
+  BEQ kaboom
+  DEC bomb_countdown
+  ; TODO - maybe SFX
+  RTS
+kaboom:
+  ; check if any breakable wall was caught by explosion
+
+  ; first we make an explosion hitbox
+  LDA bomb_x
+  CLC
+  ADC #$F7
+  STA temp_hitbox_a+Box::x1
+  LDA bomb_y
+  CLC
+  ADC #$F7
+  STA temp_hitbox_a+Box::y1
+  LDA bomb_x
+  CLC
+  ADC #$18
+  STA temp_hitbox_a+Box::x2
+  LDA bomb_y
+  CLC
+  ADC #$18
+  STA temp_hitbox_a+Box::y2
+
+  ; now we check for breakable wall hitboxes
+
+  LDX num_objects
+  BEQ return
+
+  DEX
+@loop:
+  LDA objects+Object::type, X
+  CMP #object_type::breakable_wall
+  BNE @next
+
+  CLC
+  LDA hitbox_x1, Y
+  ADC objects+Object::xcoord, X
+  SEC
+  SBC #$04
+  STA temp_hitbox_b+Box::x1
+  CLC
+  LDA hitbox_y1, Y
+  ADC objects+Object::ycoord, X
+  SEC
+  SBC #$04
+  STA temp_hitbox_b+Box::y1
+  CLC
+  LDA hitbox_x2, Y
+  ADC objects+Object::xcoord, X
+  ADC #$04
+  STA temp_hitbox_b+Box::x2
+  CLC
+  LDA hitbox_y2, Y
+  ADC objects+Object::ycoord, X
+  ADC #$04
+  STA temp_hitbox_b+Box::y2
+
+  JSR temp_hitbox_collision
+  BEQ @next
+
+  JSR delete_nth_object
+  
 @next:
   DEX
   BPL @loop
 
+  ; end check
+return:
+  LDA #$00
+  STA bomb_x
+  RTS
+.endproc
+
+.proc draw_fireball
+  ; LDA fireball_x ; XXX done by caller
+  STA temp_x
+  LDA fireball_y
+  STA temp_y
+
+  LDA nmis
+  AND #%1100
+  LSR
+  LSR
+  TAX
+
+  LDA fireball_sprites_l, X
+  STA addr_ptr
+  LDA fireball_sprites_h, X
+  STA addr_ptr+1
+
+  JSR display_metasprite
+  RTS
+.endproc
+
+.proc draw_bomb
+  ; LDA bomb_x ; XXX done by caller
+  STA temp_x
+  LDA bomb_y
+  STA temp_y
+  LDA #<bomb_sprite
+  STA addr_ptr
+  LDA #>bomb_sprite
+  STA addr_ptr+1
+
+  JSR display_metasprite
   RTS
 .endproc
 
@@ -4580,6 +4720,8 @@ fireball_sprite_2 = metasprite_35_data
 fireball_sprite_3 = metasprite_36_data
 fireball_sprite_4 = metasprite_37_data
 
+bomb_sprite = metasprite_40_data
+
 ; data fitting AnimData struct
 player_anim_data:
         .word metasprite_10_data, metasprite_11_data ; walking up
@@ -4611,10 +4753,7 @@ pushable_block_anim_data:
 breakable_wall_anim_data:
         .word metasprite_39_data, metasprite_39_data ; neutral
 
-bomb_anim_data:
-        .word metasprite_40_data, metasprite_40_data ; neutral
-
-; note: fireballs aren't really objects
+; note: fireballs and bombs aren't really objects
 fireball_sprites_l:
         .byte <fireball_sprite_1, <fireball_sprite_2, <fireball_sprite_3, <fireball_sprite_4
 fireball_sprites_h:
@@ -4630,7 +4769,6 @@ anim_data_ptr_l:
         .byte <cartridge_rr_anim_data
         .byte <pushable_block_anim_data
         .byte <breakable_wall_anim_data
-        .byte <bomb_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
         .byte >enemy_vrissy_anim_data
@@ -4640,25 +4778,24 @@ anim_data_ptr_h:
         .byte >cartridge_rr_anim_data
         .byte >pushable_block_anim_data
         .byte >breakable_wall_anim_data
-        .byte >bomb_anim_data
 
 ; indexed by object type
-;              pl,  vr,  cartridges        , blk, bw, bomb
+;              pl,  vr,  cartridges        , blk, bw
 hitbox_x1:
-        .byte $03, $02, $00, $00, $00, $00, $00, $00, $07
+        .byte $03, $02, $00, $00, $00, $00, $00, $00
 hitbox_y1:
-        .byte $00, $02, $00, $00, $00, $00, $00, $00, $07
+        .byte $00, $02, $00, $00, $00, $00, $00, $00
 hitbox_x2:
-        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $08
+        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F
 hitbox_y2:
-        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $08
+        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F
 
 inventory_mask_per_type:
         .byte $00 ; player
         .byte $00 ; vrissy
 inventory_mask_per_index:
         .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
-        .byte $00, $00, $00 ; pushable block, breakable wall, bomb
+        .byte $00, $00 ; pushable block, breakable wall
 
 is_enemy_per_type:
         .byte $00 ; player
@@ -4666,8 +4803,7 @@ is_enemy_per_type:
         .byte $00, $00, $00, $00 ; cartridges
         .byte $00 ; pushable block
         .byte $00 ; breakable wall
-        .byte $00 ; bomb
-
+       
 window_ppu_addrs_l:
         .byte $84
         .byte $A4
