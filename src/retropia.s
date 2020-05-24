@@ -138,6 +138,8 @@ oam_sprites:
   cartridge_mf
   cartridge_rr
   pushable_block
+  breakable_wall
+  bomb
 .endenum
 
 .enum direction
@@ -4579,6 +4581,12 @@ pushable_block_anim_data:
         .word metasprite_38_data, metasprite_38_data ; moving left
         .word metasprite_38_data, metasprite_38_data ; moving right
 
+breakable_wall_anim_data:
+        .word metasprite_39_data, metasprite_39_data ; neutral
+
+bomb_anim_data:
+        .word metasprite_40_data, metasprite_40_data ; neutral
+
 ; note: fireballs aren't really objects
 fireball_sprites_l:
         .byte <fireball_sprite_1, <fireball_sprite_2, <fireball_sprite_3, <fireball_sprite_4
@@ -4594,6 +4602,8 @@ anim_data_ptr_l:
         .byte <cartridge_mf_anim_data
         .byte <cartridge_rr_anim_data
         .byte <pushable_block_anim_data
+        .byte <breakable_wall_anim_data
+        .byte <bomb_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
         .byte >enemy_vrissy_anim_data
@@ -4602,17 +4612,34 @@ anim_data_ptr_h:
         .byte >cartridge_mf_anim_data
         .byte >cartridge_rr_anim_data
         .byte >pushable_block_anim_data
+        .byte >breakable_wall_anim_data
+        .byte >bomb_anim_data
 
 ; indexed by object type
-;              pl,  vr,  cartridges        , block
+;              pl,  vr,  cartridges        , blk, bw, bomb
 hitbox_x1:
-        .byte $03, $02, $00, $00, $00, $00, $00
+        .byte $03, $02, $00, $00, $00, $00, $00, $00, $07
 hitbox_y1:
-        .byte $00, $02, $00, $00, $00, $00, $00
+        .byte $00, $02, $00, $00, $00, $00, $00, $00, $07
 hitbox_x2:
-        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F
+        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $08
 hitbox_y2:
-        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F
+        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $08
+
+inventory_mask_per_type:
+        .byte $00 ; player
+        .byte $00 ; vrissy
+inventory_mask_per_index:
+        .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
+        .byte $00, $00, $00 ; pushable block, breakable wall, bomb
+
+is_enemy_per_type:
+        .byte $00 ; player
+        .byte $01 ; vrissy
+        .byte $00, $00, $00, $00 ; cartridges
+        .byte $00 ; pushable block
+        .byte $00 ; breakable wall
+        .byte $00 ; bomb
 
 window_ppu_addrs_l:
         .byte $84
@@ -4694,19 +4721,6 @@ string_dialog_gi_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
                       .byte "PRESS_A_TO_SHOOT", $00
 string_dialog_mf_win: .byte $00
 string_dialog_rr_win: .byte $00
-
-inventory_mask_per_type:
-        .byte $00 ; player
-        .byte $00 ; vrissy
-inventory_mask_per_index:
-        .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
-        .byte $00 ; block
-
-is_enemy_per_type:
-        .byte $00 ; player
-        .byte $01 ; vrissy
-        .byte $00, $00, $00, $00 ; cartridges
-        .byte $00 ; block
 
 screens_l:
         .byte $00 ; padding
