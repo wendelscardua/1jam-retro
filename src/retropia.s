@@ -1962,6 +1962,22 @@ collided:
 
   INC objects+Object::ram, X
 
+  LDA objects+Object::direction, X
+  CMP #direction::up
+  BEQ fix_x
+  CMP #direction::down
+  BEQ fix_x
+
+fix_y:
+  LDA objects+Object::ycoord, X
+  STA old_player_y
+  JMP collide
+
+fix_x:
+  LDA objects+Object::xcoord, X
+  STA old_player_x
+  ;JMP collide
+
 collide:
   LDA old_player_x
   STA objects+Object::xcoord
