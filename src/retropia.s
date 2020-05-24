@@ -1896,6 +1896,8 @@ collided:
   BEQ @cartridge_mf
   CPY #object_type::cartridge_rr
   BEQ @cartridge_rr
+  CPY #object_type::pushable_block
+  BEQ @pushable_block
   KIL ; not yet implemented
 @enemy_vrissy:
   JSR damage_player
@@ -1923,6 +1925,32 @@ collided:
   ORA #HAS_RR
   STA inventory
   DIALOG string_dialog_rr_cartridge
+  RTS
+@pushable_block:
+  JSR push_block
+  RTS
+.endproc
+
+.proc push_block
+  LDA inventory
+  AND #FINISHED_WK
+  BEQ collide
+
+  LDA objects+Object::ram, X
+  BNE collide
+
+  LDA objects+Object::direction, X
+  CMP objects+Object::direction
+
+  BNE collide
+
+  INC objects+Object::ram, X
+
+collide:
+  LDA old_player_x
+  STA objects+Object::xcoord
+  LDA old_player_y
+  STA objects+Object::ycoord
   RTS
 .endproc
 
@@ -2020,7 +2048,89 @@ return:
   BNE moving
   RTS
 moving:
+  LDA objects+Object::direction, X
+  CMP #direction::up
+  BEQ move_up
+  CMP #direction::down
+  BEQ move_down
+  CMP #direction::left
+  BEQ move_left
+  CMP #direction::right
+  BEQ move_right
+  KIL ; never happens (?)
+
+move_up:
+  LDY #$00
+  LDA objects+Object::rom_ptr_l, X
+  STA addr_ptr
+  LDA objects+Object::rom_ptr_h, X
+  STA addr_ptr+1
+  LDA (addr_ptr), Y ; target y position
+  CMP objects+Object::ycoord, X
+  BEQ stop_up
+  DEC objects+Object::ycoord, X
   RTS
+stop_up:
+  LDA #$00
+  STA objects+Object::ram, X
+  LDA #direction::down
+  STA objects+Object::direction, X
+  RTS
+
+move_down:
+  LDY #$01
+  LDA objects+Object::rom_ptr_l, X
+  STA addr_ptr
+  LDA objects+Object::rom_ptr_h, X
+  STA addr_ptr+1
+  LDA (addr_ptr), Y ; target y position
+  CMP objects+Object::ycoord, X
+  BEQ stop_down
+  INC objects+Object::ycoord, X
+  RTS
+stop_down:
+  LDA #$00
+  STA objects+Object::ram, X
+  LDA #direction::up
+  STA objects+Object::direction, X
+  RTS
+
+move_left:
+  LDY #$00
+  LDA objects+Object::rom_ptr_l, X
+  STA addr_ptr
+  LDA objects+Object::rom_ptr_h, X
+  STA addr_ptr+1
+  LDA (addr_ptr), Y ; target x position
+  CMP objects+Object::xcoord, X
+  BEQ stop_left
+  DEC objects+Object::xcoord, X
+  RTS
+stop_left:
+  LDA #$00
+  STA objects+Object::ram, X
+  LDA #direction::right
+  STA objects+Object::direction, X
+  RTS
+
+move_right:
+  LDY #$01
+  LDA objects+Object::rom_ptr_l, X
+  STA addr_ptr
+  LDA objects+Object::rom_ptr_h, X
+  STA addr_ptr+1
+  LDA (addr_ptr), Y ; target x position
+  CMP objects+Object::xcoord, X
+  BEQ stop_right
+  INC objects+Object::xcoord, X
+  RTS
+stop_right:
+  LDA #$00
+  STA objects+Object::ram, X
+  LDA #direction::left
+  STA objects+Object::direction, X
+  RTS
+
 .endproc
 
 .proc temp_hitbox_collision
