@@ -235,6 +235,7 @@ wall_x1: .res $10
 wall_y1: .res $10
 wall_x2: .res $10
 wall_y2: .res $10
+wall_watery: .res $10
 num_walls: .res 1
 
 .struct wk_var
@@ -504,7 +505,7 @@ etc:
   RTS
 .endproc
 
-.macro add_wall x1, y1, x2, y2
+.macro add_wall x1, y1, x2, y2, watery
   LDA x1
   STA wall_x1, X
   LDA y1
@@ -513,6 +514,10 @@ etc:
   STA wall_x2, X
   LDA y2
   STA wall_y2, X
+  .ifnblank watery
+  LDA watery
+  STA wall_watery, X
+  .endif
   INX
 .endmacro
 
@@ -610,6 +615,9 @@ screen_walls_loop:
   INY
   LDA (addr_ptr), Y
   STA wall_y2, X
+  INY
+  LDA (addr_ptr), Y
+  STA wall_watery, X
   INY
 
   INX
@@ -970,6 +978,7 @@ load:
 
 .proc check_wall_collision
   ; returns 1 in A if player hitbox intersect with any wall
+  ; returns 1 in Y if player is swimming
   JSR prepare_player_hitbox
   LDX num_walls
   DEX
@@ -987,8 +996,8 @@ loop:
   .ifdef DEBUG
   STX temp_b
   debugOut {"Collision, wall index = ", fDec8{temp_b}}
-  LDA #1
   .endif
+  LDA #1
   RTS ; A = 1
 next:
   DEX
@@ -4943,8 +4952,8 @@ screen_1_data:
 screen_2_data:
         .word nametable_screen_2
         .byte $00, $00, $01, $03
-        .byte $48, $38, $77, $77
-        .byte $88, $78, $B7, $B7
+        .byte $48, $38, $77, $77, $00
+        .byte $88, $78, $B7, $B7, $00
         .byte $00 ; end of walls
         .byte object_type::enemy_vrissy, $58, $20, direction::right
         .word screen_2_vrissy_1_code
@@ -4974,7 +4983,7 @@ screen_2_vrissy_2_code:
 
 screen_3_data:
         .word nametable_screen_ccoc
-        .byte $00, $00, $02, $00
+        .byte $00, $00, $02, $00, $00
         .byte $00 ; end of walls
         .byte object_type::cartridge_gi, $B0, $70, direction::up
         .word $0000
@@ -5010,15 +5019,18 @@ screen_5_data:
 screen_6_data:
         .word nametable_screen_6
         .byte $01, $00, $08, $07
-        .byte $31, $21, $3E, $2E
-        .byte $51, $21, $5E, $4E
-        .byte $31, $41, $3E, $4E
-        .byte $31, $61, $5E, $8E
-        .byte $31, $A1, $5E, $CE
+        .byte $31, $21, $3E, $2E, $00
+        .byte $51, $21, $5E, $4E, $00
+        .byte $31, $41, $3E, $4E, $00
+        .byte $31, $61, $5E, $8E, $00
+        .byte $31, $A1, $5E, $CE, $00
 
-        .byte $A1, $21, $CE, $4E
-        .byte $A1, $71, $CE, $7E
-        .byte $A1, $A1, $CE, $CE
+        .byte $A1, $21, $CE, $4E, $00
+        .byte $A1, $71, $CE, $7E, $00
+        .byte $A1, $A1, $CE, $CE, $00
+
+        .byte $A8, $80, $C7, $9F, $01 ; water
+
         .byte $00 ; end of walls
 
         .byte object_type::pushable_block, $50, $50, direction::left
@@ -5030,12 +5042,8 @@ screen_6_data:
         .byte $00
 
         .byte object_type::enemy_vrissy, $98, $58, direction::right
-        .word screen_6_vrissies_code
+        .word screen_6_vrissy_code
         .byte $00
-
-        .byte object_type::enemy_vrissy, $C8, $88, direction::left
-        .word screen_6_vrissies_code ; reuse same code
-        .byte $02 ; offset
 
         .byte object_type::breakable_wall, $40, $90, direction::up
         .word $0000
@@ -5046,7 +5054,7 @@ screen_6_block_1_code:
         .byte $30, $50
 screen_6_block_2_code:
         .byte $20, $40
-screen_6_vrissies_code:
+screen_6_vrissy_code:
         .byte $C8, direction::left
         .byte $98, direction::right
         .byte $00
