@@ -4865,9 +4865,13 @@ screen_6_vrissies_code:
         .byte $00
 
 screen_7_data:
-        .word nametable_screen_todo
+        .word nametable_screen_ccoc
         .byte $00, $00, $06, $00
-        .byte $00, $00
+        .byte $00 ; end of walls
+        .byte object_type::cartridge_rr, $48, $A0, direction::up
+        .word $0000
+        .byte $00
+        .byte $00 ; end of objects
 screen_8_data:
         .word nametable_screen_todo
         .byte $00, $00, $00, $06
