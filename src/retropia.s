@@ -1007,9 +1007,8 @@ loop:
   AND #FINISHED_RR
   BEQ normal_collision
   LDA #1
-  STA swimming
-  LDA #0
-  RTS ; start swimming
+  STA swimming ; start swimming
+  JMP next ; but may be colliding with something else
 normal_collision:
   LDA #1
   RTS
@@ -1274,6 +1273,15 @@ draw_elements_loop:
   ADC objects+Object::direction, X
   .endrepeat
   TAY
+  LDA swimming
+  BEQ :+
+  TXA
+  BNE :+
+  TYA
+  CLC
+  ADC #$10
+  TAY
+:
 
   LDA (addr_ptr),Y
   PHA
@@ -4751,6 +4759,11 @@ player_anim_data:
         .word metasprite_12_data, metasprite_13_data ; walking down
         .word metasprite_14_data, metasprite_15_data ; walking left
         .word metasprite_16_data, metasprite_17_data ; walking right
+
+        .word metasprite_41_data, metasprite_41_data ; swimming up
+        .word metasprite_42_data, metasprite_42_data ; swimming down
+        .word metasprite_43_data, metasprite_43_data ; swimming left
+        .word metasprite_44_data, metasprite_44_data ; swimming right
 
 enemy_vrissy_anim_data:
         .word metasprite_18_data, metasprite_19_data ; walking up

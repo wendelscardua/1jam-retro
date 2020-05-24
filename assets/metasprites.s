@@ -296,6 +296,30 @@ metasprite_40_data:
 	.byte   8,  8,$29,0
 	.byte 128
 
+metasprite_41_data:
+
+	.byte   0,  0,$00,0
+	.byte   8,  0,$00,0|OAM_FLIP_H
+	.byte 128
+
+metasprite_42_data:
+
+	.byte   0,  0,$03,0
+	.byte   8,  0,$04,0
+	.byte 128
+
+metasprite_43_data:
+
+	.byte   0,  0,$06,0|OAM_FLIP_H
+	.byte   8,  0,$05,0|OAM_FLIP_H
+	.byte 128
+
+metasprite_44_data:
+
+	.byte   0,  0,$05,0
+	.byte   8,  0,$06,0
+	.byte 128
+
 metasprite_pointers:
 
 	.word metasprite_0_data
@@ -339,3 +363,7 @@ metasprite_pointers:
 	.word metasprite_38_data
 	.word metasprite_39_data
 	.word metasprite_40_data
+	.word metasprite_41_data
+	.word metasprite_42_data
+	.word metasprite_43_data
+	.word metasprite_44_data
