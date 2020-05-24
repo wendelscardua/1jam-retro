@@ -4548,6 +4548,9 @@ fireball_sprite_2 = metasprite_35_data
 fireball_sprite_3 = metasprite_36_data
 fireball_sprite_4 = metasprite_37_data
 
+breakable_wall_sprite = metasprite_39_data
+bomb_sprite = metasprite_40_data
+
 ; data fitting AnimData struct
 player_anim_data:
         .word metasprite_10_data, metasprite_11_data ; walking up
