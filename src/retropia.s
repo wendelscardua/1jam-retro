@@ -4826,9 +4826,14 @@ screen_4_block_2_code:
         .byte $90, $D0
 
 screen_5_data:
-        .word nametable_screen_todo
+        .word nametable_screen_ccco
         .byte $00, $00, $00, $04
-        .byte $00, $00
+        .byte $00 ; end of walls
+        .byte object_type::cartridge_wk, $50, $50, direction::up
+        .word $0000
+        .byte $00
+        .byte $00 ; end of objects
+
 screen_6_data:
         .word nametable_screen_todo
         .byte $01, $07, $00, $00
@@ -4960,6 +4965,7 @@ nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
 nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
 nametable_screen_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
 nametable_screen_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
+nametable_screen_ccco: .incbin "../assets/nametables/screens/grass-ccco.rle"
 
 nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
