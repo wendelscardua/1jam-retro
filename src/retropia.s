@@ -4833,22 +4833,23 @@ screen_5_data:
 screen_6_data:
         .word nametable_screen_6
         .byte $01, $00, $08, $07
-        .byte $31, $21, $5E, $4E
-        .byte $51, $61, $5E, $6E
-        .byte $31, $71, $5E, $7E
-        .byte $31, $81, $3E, $8E
+        .byte $31, $21, $3E, $2E
+        .byte $51, $21, $5E, $4E
+        .byte $31, $41, $3E, $4E
+        .byte $31, $61, $5E, $8E
         .byte $31, $A1, $5E, $CE
+
         .byte $A1, $21, $CE, $4E
         .byte $A1, $71, $CE, $7E
         .byte $A1, $A1, $CE, $CE
         .byte $00 ; end of walls
 
         .byte object_type::pushable_block, $50, $50, direction::left
-        .word screen_6_blocks_code
+        .word screen_6_block_1_code
         .byte $00
 
-        .byte object_type::pushable_block, $30, $90, direction::right
-        .word screen_6_blocks_code ; reuse same code
+        .byte object_type::pushable_block, $40, $40, direction::up
+        .word screen_6_block_2_code
         .byte $00
 
         .byte object_type::enemy_vrissy, $98, $58, direction::right
@@ -4860,8 +4861,10 @@ screen_6_data:
         .byte $02
 
         .byte $00 ; end of objects
-screen_6_blocks_code:
+screen_6_block_1_code:
         .byte $30, $50
+screen_6_block_2_code:
+        .byte $20, $40
 screen_6_vrissies_code:
         .byte $C8, direction::left
         .byte $98, direction::right
