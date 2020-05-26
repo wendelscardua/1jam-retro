@@ -5145,9 +5145,58 @@ screen_9_vrissies_code:
         .byte $00
 
 screen_A_data:
-        .word nametable_screen_todo
+        .word nametable_screen_A
         .byte $0B, $09, $00, $00
-        .byte $00, $00
+
+        ; rivers
+        .byte $18, $A8, $E7, $C7, $01
+        .byte $30, $30, $8F, $37, $01
+        .byte $30, $30, $3F, $67, $01
+        .byte $40, $60, $47, $67, $01
+
+        ; normal walls
+
+        .byte $90, $70, $BF, $9F, $00
+        .byte $D0, $50, $E7, $9F, $00
+        .byte $18, $18, $2F, $6F, $00
+        .byte $18, $70, $1F, $9F, $00
+        .byte $20, $90, $2F, $9F, $00
+        .byte $40, $90, $8F, $9F, $00
+        .byte $40, $80, $4F, $8F, $00
+        .byte $30, $70, $4F, $7F, $00
+        .byte $60, $70, $7F, $7F, $00
+        .byte $60, $60, $6F, $6F, $00
+        .byte $40, $40, $4F, $5F, $00
+        .byte $50, $40, $7F, $4F, $00
+        .byte $70, $50, $CF, $5F, $00
+        .byte $30, $20, $8F, $2F, $00
+        .byte $90, $30, $AF, $3F, $00
+        .byte $C0, $30, $CF, $3F, $00
+         
+        .byte $00 ; end of walls
+
+        .byte object_type::breakable_wall, $B0, $20, direction::up
+        .word $0000
+        .byte $00
+
+        .byte object_type::breakable_wall, $C0, $40, direction::up
+        .word $0000
+        .byte $00
+
+        .byte object_type::breakable_wall, $80, $70, direction::up
+        .word $0000
+        .byte $00
+
+        .byte object_type::breakable_wall, $30, $90, direction::up
+        .word $0000
+        .byte $00
+
+        .byte object_type::breakable_wall, $C0, $90, direction::up
+        .word $0000
+        .byte $00
+
+
+        .byte $00 ; end of objects
 screen_B_data:
         .word nametable_screen_todo
         .byte $00, $0A, $00, $00
@@ -5247,6 +5296,7 @@ nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
 nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
 nametable_screen_6: .incbin "../assets/nametables/screens/screen-6.rle"
 nametable_screen_9: .incbin "../assets/nametables/screens/screen-9.rle"
+nametable_screen_A: .incbin "../assets/nametables/screens/screen-a.rle"
 nametable_screen_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
 nametable_screen_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
 nametable_screen_ccco: .incbin "../assets/nametables/screens/grass-ccco.rle"
