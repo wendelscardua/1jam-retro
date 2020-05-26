@@ -232,11 +232,11 @@ swimming: .res 1
 .segment "BSS"
 ; non-zp RAM goes here
 gamekid_ram: .res $100
-wall_x1: .res $10
-wall_y1: .res $10
-wall_x2: .res $10
-wall_y2: .res $10
-wall_watery: .res $10
+wall_x1: .res $20
+wall_y1: .res $20
+wall_x2: .res $20
+wall_y2: .res $20
+wall_watery: .res $20
 num_walls: .res 1
 
 .struct wk_var
@@ -999,6 +999,7 @@ loop:
   .ifdef DEBUG
   STX temp_b
   debugOut {"Collision, wall index = ", fDec8{temp_b}}
+  debugOut {"Box = ", fHex8{temp_hitbox_b+Box::x1}, ", ", fHex8{temp_hitbox_b+Box::y1}, ", ", fHex8{temp_hitbox_b+Box::x2}, ", ", fHex8{temp_hitbox_b+Box::y2}}
   .endif
   LDA wall_watery, X
   BEQ normal_collision
@@ -5103,12 +5104,49 @@ screen_8_data:
         .byte $00
         .byte $00 ; end of objects
 screen_9_data:
-        .word nametable_screen_todo
+        .word nametable_screen_9
         .byte $0A, $01, $00, $00
-        .byte $00, $00
+        .byte $18, $C0, $7F, $CF, $00
+        .byte $A8, $C8, $EF, $EF, $00
+        .byte $C0, $70, $EF, $EF, $00
+        .byte $B0, $70, $BF, $8F, $00
+        .byte $E0, $50, $E7, $6F, $00
+        .byte $70, $70, $8F, $8F, $00
+        .byte $70, $A0, $AF, $AF, $00
+        .byte $70, $B0, $7F, $BF, $00
+        .byte $38, $A0, $5F, $AF, $00
+        
+        .byte $38, $38, $4F, $9F, $00
+        .byte $50, $38, $EF, $4F, $00        
+        .byte $00 ; end of walls
+
+        .byte object_type::pushable_block, $A0, $90, direction::left
+        .word screen_9_block_code
+        .byte $00
+
+        .byte object_type::enemy_vrissy, $18, $A0, direction::up
+        .word screen_9_vrissies_code
+        .byte $00
+
+        .byte object_type::enemy_vrissy, $28, $20, direction::down
+        .word screen_9_vrissies_code
+        .byte $04
+
+        .byte $00 ; end of objects
+
+screen_9_block_code:
+        .byte $60, $A0
+
+screen_9_vrissies_code:
+        .byte $20, direction::right
+        .byte $28, direction::down
+        .byte $A0, direction::left
+        .byte $18, direction::up
+        .byte $00
+
 screen_A_data:
         .word nametable_screen_todo
-        .byte $0B, $00, $00, $00
+        .byte $0B, $09, $00, $00
         .byte $00, $00
 screen_B_data:
         .word nametable_screen_todo
@@ -5208,6 +5246,7 @@ rr_barrier_transitions:
 nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
 nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
 nametable_screen_6: .incbin "../assets/nametables/screens/screen-6.rle"
+nametable_screen_9: .incbin "../assets/nametables/screens/screen-9.rle"
 nametable_screen_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
 nametable_screen_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
 nametable_screen_ccco: .incbin "../assets/nametables/screens/grass-ccco.rle"
