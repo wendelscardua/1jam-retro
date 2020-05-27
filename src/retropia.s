@@ -233,6 +233,7 @@ boss_horizontal: .res 1
 boss_vertical: .res 1
 boss_h_speed: .res 1
 boss_v_speed: .res 1
+boss_lives: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -500,6 +501,8 @@ etc:
   STA boss_vertical
   LDA #1
   STA boss_v_speed
+  LDA #3
+  STA boss_lives
 
   JSR load_screen
   RTS
