@@ -1264,6 +1264,26 @@ draw_elements_loop:
   STA addr_ptr
   LDA anim_data_ptr_h, Y
   STA addr_ptr+1
+
+  CPY #object_type::glitch_boss
+  BNE no_boss
+
+  ; boss has 4 sprites animation for left/right directions
+  CLC
+  LDA objects+Object::sprite_toggle, X
+  AND #%1100
+  LSR
+  TAY
+  LDA objects+Object::direction, X
+  CMP #direction::left
+  BEQ load_sprite
+  TYA
+  CLC
+  ADC #8
+  TAY
+
+no_boss:
+
   ; then we find the right index to metasprite inside anim_data
   ; Y = 4 * direction + 2 * sprite_toggle_relevant_bit
   CLC
@@ -1276,14 +1296,14 @@ draw_elements_loop:
   .endrepeat
   TAY
   LDA swimming
-  BEQ :+
+  BEQ load_sprite
   TXA
-  BNE :+
+  BNE load_sprite
   TYA
   CLC
   ADC #$10
   TAY
-:
+load_sprite:
 
   LDA (addr_ptr),Y
   PHA
