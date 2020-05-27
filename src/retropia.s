@@ -231,6 +231,8 @@ bomb_countdown: .res 1
 swimming: .res 1
 boss_horizontal: .res 1
 boss_vertical: .res 1
+boss_h_speed: .res 1
+boss_v_speed: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -492,8 +494,12 @@ etc:
   ; only useful for boss level
   LDA #direction::left
   STA boss_horizontal
+  LDA #2
+  STA boss_h_speed
   LDA #direction::down
   STA boss_vertical
+  LDA #1
+  STA boss_v_speed
 
   JSR load_screen
   RTS
@@ -2290,22 +2296,37 @@ return:
   CMP #direction::left
   BEQ @move_left
 @move_right:
-  INC objects+Object::xcoord, X
-  INC objects+Object::xcoord, X
   LDA objects+Object::xcoord, X
-  CMP #$E0
+  CLC
+  ADC boss_h_speed
+  STA objects+Object::xcoord, X
+  CMP #$D0
   BCC @vertical_movement
   LDA #direction::left
   STA boss_horizontal
+:
+  JSR rand
+  LDA rng_seed
+  AND #%11
+  BEQ :-
+  STA boss_h_speed
   JMP @vertical_movement
 @move_left:
-  DEC objects+Object::xcoord, X
-  DEC objects+Object::xcoord, X
   LDA objects+Object::xcoord, X
-  CMP #$10
+  SEC
+  SBC boss_h_speed
+  STA objects+Object::xcoord, X
+  CMP #$18
   BCS @vertical_movement
   LDA #direction::right
   STA boss_horizontal
+:
+  JSR rand
+  LDA rng_seed
+  AND #%11
+  BEQ :-
+  STA boss_h_speed
+  
   ; JMP @vertical_movement
 
 @vertical_movement:
@@ -2313,20 +2334,36 @@ return:
   CMP #direction::up
   BEQ @move_up
 @move_down:
-  INC objects+Object::ycoord, X
   LDA objects+Object::ycoord, X
+  CLC
+  ADC boss_v_speed
+  STA objects+Object::ycoord, X
   CMP #$C0
   BCC @return
   LDA #direction::up
   STA boss_vertical
+:
+  JSR rand
+  LDA rng_seed
+  AND #%11
+  BEQ :-
+  STA boss_v_speed
   JMP @return
 @move_up:
-  DEC objects+Object::ycoord, X
   LDA objects+Object::ycoord, X
-  CMP #$10
+  SEC
+  SBC boss_v_speed
+  STA objects+Object::ycoord, X
+  CMP #$18
   BCS @return
   LDA #direction::down
   STA boss_vertical
+:
+  JSR rand
+  LDA rng_seed
+  AND #%11
+  BEQ :-
+  STA boss_v_speed
   ; JMP @return
 
 @return:
