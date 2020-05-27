@@ -229,6 +229,7 @@ bomb_x: .res 1
 bomb_y: .res 1
 bomb_countdown: .res 1
 swimming: .res 1
+boss_index: .res 1
 boss_horizontal: .res 1
 boss_vertical: .res 1
 boss_h_speed: .res 1
@@ -1175,6 +1176,8 @@ move_right:
 :
 
   ; update elements
+  LDA #$0
+  STA boss_index
   LDX num_objects
   DEX
   BEQ skip_update_elements
@@ -1205,6 +1208,7 @@ update_elements_loop:
   JSR animate_block
   JMP next
 @update_boss:
+  STX boss_index
   JSR update_boss
   ; JMP next
 next:
@@ -1375,6 +1379,48 @@ lives_loop:
   DEC temp_b
   BNE lives_loop
 skip_lives:
+
+  ; draw boss lives
+  LDX boss_index
+  BEQ skip_boss_lives
+  LDA boss_lives
+  BEQ skip_boss_lives
+  STA temp_b
+
+  LDA objects+Object::xcoord, X
+  STA temp_x
+boss_lives_loop:
+  LDA objects+Object::ycoord, X
+  SEC
+  SBC #$08
+  STA temp_y
+  LDA nmis
+  AND #%11000
+  LSR
+  LSR
+  LSR
+  EOR #%11
+  CMP temp_b
+  BNE :+
+  LDA temp_y
+  SEC
+  SBC #$03
+  STA temp_y
+  :
+  TXA
+  PHA
+  JSR display_metasprite
+  PLA
+  TAX
+  CLC
+  LDA #$0A
+  ADC temp_x
+  STA temp_x
+  DEC temp_b
+  BNE boss_lives_loop
+
+
+skip_boss_lives:
 
   ; ensure we erase sprites if we lost a metasprite before
   LDX sprite_counter
