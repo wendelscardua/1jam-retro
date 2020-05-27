@@ -4913,15 +4913,31 @@ string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
                          .byte "WAS_DEFEATED", $0A
                          .byte $0A
                          .byte "OUR_HOPE_IS_GONE", $00
-string_dialog_wk_win: .byte $00
+string_dialog_wk_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
+                      .byte $0A
+                      .byte "PUSHING_BLOCKS", $0A
+                      .byte $0A
+                      .byte "HEAVY_BLOCKS_CAN_BE", $0A
+                      .byte "PUSHED_NOW", $0A
+                      .byte $00
 string_dialog_gi_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
                       .byte $0A
                       .byte "FIREBALL", $0A
                       .byte $0A
                       .byte "PRESS_A_TO_SHOOT", $00
-string_dialog_mf_win: .byte $00
-string_dialog_rr_win: .byte $00
-
+string_dialog_mf_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
+                      .byte $0A
+                      .byte "CREATING_BOMBS", $0A
+                      .byte $0A
+                      .byte "PRESS_B_TO_DROP_BOMB", $0A
+                      .byte $00
+string_dialog_rr_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
+                      .byte $0A
+                      .byte "SWIMMING", $0A
+                      .byte $0A
+                      .byte "WALK_INTO_WATER_TO", $0A
+                      .byte "SWIM_AROUND", $0A
+                      .byte $00
 screens_l:
         .byte $00 ; padding
         .byte <screen_1_data
