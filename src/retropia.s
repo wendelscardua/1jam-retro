@@ -2068,7 +2068,7 @@ game_over:
   RTS
 collided:
   CPY #object_type::enemy_vrissy
-  BEQ @enemy_vrissy
+  BEQ @enemy
   CPY #object_type::cartridge_wk
   BEQ @cartridge_wk
   CPY #object_type::cartridge_gi
@@ -2081,8 +2081,10 @@ collided:
   BEQ @pushable_block
   CPY #object_type::breakable_wall
   BEQ @breakable_wall
+  CPY #object_type::glitch_boss
+  BEQ @enemy
   KIL ; not yet implemented
-@enemy_vrissy:
+@enemy:
   JSR damage_player
   RTS
 @cartridge_wk:
