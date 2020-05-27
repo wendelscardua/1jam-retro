@@ -5225,9 +5225,15 @@ screen_A_data:
 
         .byte $00 ; end of objects
 screen_B_data:
-        .word nametable_screen_todo
+        .word nametable_screen_B
         .byte $00, $0A, $00, $00
-        .byte $00, $00
+        .byte $00 ; end of walls
+
+        .byte object_type::glitch_boss, $C0, $30, direction::left
+        .word $0000
+        .byte $00
+
+        .byte $00 ; end of objects
 
 wk_levels:
         .word wk_level_1_data
@@ -5324,6 +5330,7 @@ nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
 nametable_screen_6: .incbin "../assets/nametables/screens/screen-6.rle"
 nametable_screen_9: .incbin "../assets/nametables/screens/screen-9.rle"
 nametable_screen_A: .incbin "../assets/nametables/screens/screen-a.rle"
+nametable_screen_B: .incbin "../assets/nametables/screens/screen-b.rle"
 nametable_screen_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
 nametable_screen_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
 nametable_screen_ccco: .incbin "../assets/nametables/screens/grass-ccco.rle"
