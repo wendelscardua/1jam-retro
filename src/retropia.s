@@ -1385,6 +1385,7 @@ skip_lives:
   BEQ skip_boss_lives
   LDA boss_lives
   BEQ skip_boss_lives
+  BMI skip_boss_lives
   STA temp_b
 
   LDA objects+Object::xcoord, X
@@ -1418,7 +1419,6 @@ boss_lives_loop:
   STA temp_x
   DEC temp_b
   BNE boss_lives_loop
-
 
 skip_boss_lives:
 
@@ -1575,7 +1575,13 @@ enemy_collision:
   BCS @next
 
   ; delete fireball and object
+  CPX boss_index
+  BNE @skip_boss_check
+  DEC boss_lives
+  BPL @skip_enemy_deleted
+@skip_boss_check:
   JSR delete_nth_object
+@skip_enemy_deleted:
   JMP delete_fireball
 @next:
   DEX
