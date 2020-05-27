@@ -139,6 +139,7 @@ oam_sprites:
   cartridge_rr
   pushable_block
   breakable_wall
+  glitch_boss
 .endenum
 
 .enum direction
@@ -4790,6 +4791,10 @@ pushable_block_anim_data:
 breakable_wall_anim_data:
         .word metasprite_39_data, metasprite_39_data ; neutral
 
+glitch_boss_anim_data:
+        .word metasprite_45_data, metasprite_46_data, metasprite_47_data, metasprite_48_data ; moving left
+        .word metasprite_49_data, metasprite_50_data, metasprite_51_data, metasprite_52_data ; moving right
+
 ; note: fireballs and bombs aren't really objects
 fireball_sprites_l:
         .byte <fireball_sprite_1, <fireball_sprite_2, <fireball_sprite_3, <fireball_sprite_4
@@ -4806,6 +4811,7 @@ anim_data_ptr_l:
         .byte <cartridge_rr_anim_data
         .byte <pushable_block_anim_data
         .byte <breakable_wall_anim_data
+        .byte <glitch_boss_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
         .byte >enemy_vrissy_anim_data
@@ -4815,17 +4821,18 @@ anim_data_ptr_h:
         .byte >cartridge_rr_anim_data
         .byte >pushable_block_anim_data
         .byte >breakable_wall_anim_data
+        .byte >glitch_boss_anim_data
 
 ; indexed by object type
-;              pl,  vr,  cartridges        , blk, bw
+;              pl,  vr,  cartridges        , blk, bw, gb
 hitbox_x1:
-        .byte $03, $02, $00, $00, $00, $00, $00, $00
+        .byte $03, $02, $00, $00, $00, $00, $00, $00, $08
 hitbox_y1:
-        .byte $00, $02, $00, $00, $00, $00, $00, $00
+        .byte $00, $02, $00, $00, $00, $00, $00, $00, $08
 hitbox_x2:
-        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F
+        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $14
 hitbox_y2:
-        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F
+        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $18
 
 inventory_mask_per_type:
         .byte $00 ; player
@@ -4833,6 +4840,7 @@ inventory_mask_per_type:
 inventory_mask_per_index:
         .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
         .byte $00, $00 ; pushable block, breakable wall
+        .byte $00 ; glitch boss
 
 is_enemy_per_type:
         .byte $00 ; player
@@ -4840,6 +4848,7 @@ is_enemy_per_type:
         .byte $00, $00, $00, $00 ; cartridges
         .byte $00 ; pushable block
         .byte $00 ; breakable wall
+        .byte $01 ; glitch boss
        
 window_ppu_addrs_l:
         .byte $84
