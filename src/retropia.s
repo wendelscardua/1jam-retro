@@ -1291,7 +1291,8 @@ draw_elements_loop:
   ; boss has 4 sprites animation for left/right directions
   CLC
   LDA objects+Object::sprite_toggle, X
-  AND #%1100
+  AND #%11000
+  LSR
   LSR
   TAY
   LDA objects+Object::direction, X
@@ -1301,6 +1302,7 @@ draw_elements_loop:
   CLC
   ADC #8
   TAY
+  JMP load_sprite
 
 no_boss:
 
