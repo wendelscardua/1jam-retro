@@ -229,6 +229,8 @@ bomb_x: .res 1
 bomb_y: .res 1
 bomb_countdown: .res 1
 swimming: .res 1
+boss_horizontal: .res 1
+boss_vertical: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -466,7 +468,7 @@ etc:
 .proc start_game_setup
   LDA #game_states::main_playing
   STA game_state
-  LDA #1
+  LDA #$B ; XXX remove after implementing screen B
   STA current_screen
   STA num_objects
   LDA #$80
@@ -486,6 +488,13 @@ etc:
   STA lives
   LDA #$00
   STA current_nametable
+
+  ; only useful for boss level
+  LDA #direction::left
+  STA boss_horizontal
+  LDA #direction::down
+  STA boss_vertical
+
   JSR load_screen
   RTS
 .endproc
@@ -1220,6 +1229,8 @@ update_elements_loop:
   BEQ @animate_cartridge
   CMP #object_type::pushable_block
   BEQ @animate_block
+  CMP #object_type::glitch_boss
+  BEQ @update_boss
   JMP next
 @animate_vrissy:
   JSR update_enemy_vrissy
@@ -1230,6 +1241,9 @@ update_elements_loop:
 @animate_block:
   JSR animate_block
   JMP next
+@update_boss:
+  JSR update_boss
+  ; JMP next
 next:
   DEX
   BNE update_elements_loop ; X = 0 is player object
@@ -2267,6 +2281,57 @@ update_direction:
 :
   STY objects+Object::ram, X
 return:
+  RTS
+.endproc
+
+.proc update_boss
+  INC objects+Object::sprite_toggle, X
+  LDA boss_horizontal
+  CMP #direction::left
+  BEQ @move_left
+@move_right:
+  INC objects+Object::xcoord, X
+  INC objects+Object::xcoord, X
+  LDA objects+Object::xcoord, X
+  CMP #$E0
+  BCC @vertical_movement
+  LDA #direction::left
+  STA boss_horizontal
+  JMP @vertical_movement
+@move_left:
+  DEC objects+Object::xcoord, X
+  DEC objects+Object::xcoord, X
+  LDA objects+Object::xcoord, X
+  CMP #$10
+  BCS @vertical_movement
+  LDA #direction::right
+  STA boss_horizontal
+  ; JMP @vertical_movement
+
+@vertical_movement:
+  LDA boss_vertical
+  CMP #direction::up
+  BEQ @move_up
+@move_down:
+  INC objects+Object::ycoord, X
+  LDA objects+Object::ycoord, X
+  CMP #$C0
+  BCC @return
+  LDA #direction::up
+  STA boss_vertical
+  JMP @return
+@move_up:
+  DEC objects+Object::ycoord, X
+  LDA objects+Object::ycoord, X
+  CMP #$10
+  BCS @return
+  LDA #direction::down
+  STA boss_vertical
+  ; JMP @return
+
+@return:
+  LDA boss_horizontal
+  STA objects+Object::direction, X
   RTS
 .endproc
 
@@ -4848,13 +4913,13 @@ anim_data_ptr_h:
 ; indexed by object type
 ;              pl,  vr,  cartridges        , blk, bw, gb
 hitbox_x1:
-        .byte $03, $02, $00, $00, $00, $00, $00, $00, $08
+        .byte $03, $02, $00, $00, $00, $00, $00, $00, $07
 hitbox_y1:
-        .byte $00, $02, $00, $00, $00, $00, $00, $00, $08
+        .byte $00, $02, $00, $00, $00, $00, $00, $00, $04
 hitbox_x2:
-        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $14
+        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $11
 hitbox_y2:
-        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $18
+        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $16
 
 inventory_mask_per_type:
         .byte $00 ; player
