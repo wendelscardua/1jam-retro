@@ -816,47 +816,6 @@ skip_second_bg:
   RTS
 .endproc
 
-.proc DEBUG_start
-  LDA #%00010000
-  STA PPUCTRL
-
-  BIT PPUSTATUS
-  LDA #%00000000  ; turn off screen
-  STA PPUMASK
-
-  LDA PPUSTATUS
-  LDA #$29
-  STA PPUADDR
-  LDA #$00
-  STA PPUADDR
-  RTS
-.endproc
-
-.proc DEBUG_end
-  VBLANK
-  BIT PPUSTATUS
-  LDA #%00011110  ; turn on screen
-  STA PPUMASK
-  LDA #$20
-  STA PPUADDR
-  LDA #$00
-  STA PPUADDR
-  RTS
-.endproc
-
-.proc DEBUG_print_byte
-  PHA
-  AND #%11110000
-  .repeat 4
-  LSR
-  .endrepeat
-  JSR print_hex
-  PLA
-  AND #%00001111
-  JSR print_hex
-  RTS
-.endproc
-
 .proc print_hex
   CMP #$0A
   BCS :+
@@ -1012,11 +971,6 @@ loop:
   STA temp_hitbox_b+Box::y2
   JSR temp_hitbox_collision
   BEQ next
-  .ifdef DEBUG
-  STX temp_b
-  debugOut {"Collision, wall index = ", fDec8{temp_b}}
-  debugOut {"Box = ", fHex8{temp_hitbox_b+Box::x1}, ", ", fHex8{temp_hitbox_b+Box::y1}, ", ", fHex8{temp_hitbox_b+Box::x2}, ", ", fHex8{temp_hitbox_b+Box::y2}}
-  .endif
   LDA wall_watery, X
   BEQ normal_collision
   ; on water, check if player can swim
