@@ -140,6 +140,7 @@ oam_sprites:
   pushable_block
   breakable_wall
   glitch_boss
+  faerie
 .endenum
 
 .enum direction
@@ -176,9 +177,6 @@ MAX_OBJECTS=10
 ; - pushable block -> can be pushed between two locations
 ; rom: (target-x-left-or-y-up target-x-right-or-y-down)
 ; ram: boolean-pushed
-; - breakable wall -> can be destroyed by bombs
-; rom: ignored
-; ram: ignored
 
 .importzp rng_seed
 .importzp buttons
@@ -1331,6 +1329,7 @@ update_elements_loop:
   BEQ @animate_block
   CMP #object_type::glitch_boss
   BEQ @update_boss
+  INC objects+Object::sprite_toggle, X
   JMP next
 @animate_vrissy:
   JSR update_enemy_vrissy
@@ -2256,6 +2255,8 @@ collided:
   BEQ @breakable_wall
   CPY #object_type::glitch_boss
   BEQ @enemy
+  CPY #object_type::faerie
+  BEQ @exposition
   KIL ; not yet implemented
 @enemy:
   JSR damage_player
@@ -2292,6 +2293,9 @@ collided:
   STA objects+Object::xcoord
   LDA old_player_y
   STA objects+Object::ycoord
+  RTS
+@exposition:
+  KIL
   RTS
 .endproc
 
@@ -5044,6 +5048,9 @@ glitch_boss_anim_data:
         .word metasprite_45_data, metasprite_46_data, metasprite_47_data, metasprite_48_data ; moving left
         .word metasprite_49_data, metasprite_50_data, metasprite_51_data, metasprite_52_data ; moving right
 
+faerie_anim_data:
+        .word metasprite_53_data, metasprite_54_data ; neutral
+
 ; note: fireballs and bombs aren't really objects
 fireball_sprites_l:
         .byte <fireball_sprite_1, <fireball_sprite_2, <fireball_sprite_3, <fireball_sprite_4
@@ -5061,6 +5068,7 @@ anim_data_ptr_l:
         .byte <pushable_block_anim_data
         .byte <breakable_wall_anim_data
         .byte <glitch_boss_anim_data
+        .byte <faerie_anim_data
 anim_data_ptr_h:
         .byte >player_anim_data
         .byte >enemy_vrissy_anim_data
@@ -5071,17 +5079,18 @@ anim_data_ptr_h:
         .byte >pushable_block_anim_data
         .byte >breakable_wall_anim_data
         .byte >glitch_boss_anim_data
+        .byte >faerie_anim_data
 
 ; indexed by object type
-;              pl,  vr,  cartridges        , blk, bw, gb
+;              pl,  vr,  cartridges        , blk, bw, gb, fae
 hitbox_x1:
-        .byte $03, $02, $00, $00, $00, $00, $00, $00, $07
+        .byte $03, $02, $00, $00, $00, $00, $00, $00, $07, $00
 hitbox_y1:
-        .byte $00, $02, $00, $00, $00, $00, $00, $00, $04
+        .byte $00, $02, $00, $00, $00, $00, $00, $00, $04, $00
 hitbox_x2:
-        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $11
+        .byte $0C, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $11, $0F
 hitbox_y2:
-        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $16
+        .byte $0F, $0D, $0F, $0F, $0F, $0F, $0F, $0F, $16, $0F
 
 inventory_mask_per_type:
         .byte $00 ; player
@@ -5090,6 +5099,7 @@ inventory_mask_per_index:
         .byte HAS_WK, HAS_GI, HAS_MF, HAS_RR
         .byte $00, $00 ; pushable block, breakable wall
         .byte $00 ; glitch boss
+        .byte $00 ; faerie
 
 is_enemy_per_type:
         .byte $00 ; player
@@ -5098,6 +5108,7 @@ is_enemy_per_type:
         .byte $00 ; pushable block
         .byte $00 ; breakable wall
         .byte $01 ; glitch boss
+        .byte $00 ; faerie
 
 window_ppu_addrs_l:
         .byte $84
@@ -5261,6 +5272,10 @@ screen_1_data:
         .word $0000
         .byte $00
         .endif
+        .byte object_type::faerie, $60, $60, direction::up
+        .word $0000
+        .byte $00
+
         .byte $00
 screen_2_data:
         .word nametable_screen_2
