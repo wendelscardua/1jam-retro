@@ -5215,12 +5215,13 @@ screen_2_vrissy_2_code:
 
 screen_3_data:
         .word nametable_screen_ccoc
-        .byte $00, $00, $02, $00, $00
+        .byte $00, $00, $02, $00
         .byte $00 ; end of walls
         .byte object_type::cartridge_gi, $B0, $70, direction::up
         .word $0000
         .byte $00
         .byte $00 ; end of objects
+
 screen_4_data:
         .word nametable_screen_4
         .byte $00, $00, $05, $01
