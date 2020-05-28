@@ -56,6 +56,9 @@ FINISHED_GI = %00100000
 FINISHED_MF = %01000000
 FINISHED_RR = %10000000
 
+MAIN_EXPLANATION = %00010000
+FINAL_QUEST_EXPLANATION = %00100000
+
 .segment "ZEROPAGE"
 FT_TEMP: .res 3
 .segment "FAMITONE"
@@ -233,6 +236,7 @@ boss_vertical: .res 1
 boss_h_speed: .res 1
 boss_v_speed: .res 1
 boss_lives: .res 1
+faerie_checklist: .res 1
 
 .segment "BSS"
 ; non-zp RAM goes here
@@ -497,6 +501,9 @@ etc:
   STA lives
   LDA #$00
   STA current_nametable
+
+  LDA #$00
+  STA faerie_checklist
 
   ; only useful for boss level
   LDA #direction::left
@@ -2295,7 +2302,81 @@ collided:
   STA objects+Object::ycoord
   RTS
 @exposition:
-  KIL
+  JSR faerie_exposition
+  RTS
+.endproc
+
+.proc faerie_exposition
+  LDA faerie_checklist
+  AND #MAIN_EXPLANATION
+  BNE :+
+  LDA #MAIN_EXPLANATION
+  ORA faerie_checklist
+  STA faerie_checklist
+  DIALOG string_dialog_main_explanation
+  RTS
+:
+  LDA faerie_checklist
+  AND #HAS_WK
+  BNE :+
+  LDA inventory
+  AND #(FINISHED_WK | HAS_WK)
+  CMP #HAS_WK
+  BNE :+
+  LDA #HAS_WK
+  ORA faerie_checklist
+  STA faerie_checklist
+  DIALOG string_dialog_explain_wk
+  RTS
+:
+  LDA faerie_checklist
+  AND #HAS_GI
+  BNE :+
+  LDA inventory
+  AND #(FINISHED_GI | HAS_GI)
+  CMP #HAS_GI
+  BNE :+
+  LDA #HAS_GI
+  ORA faerie_checklist
+  STA faerie_checklist
+  DIALOG string_dialog_explain_gi
+  RTS
+:
+  LDA faerie_checklist
+  AND #HAS_MF
+  BNE :+
+  LDA inventory
+  AND #(FINISHED_MF | HAS_MF)
+  CMP #HAS_MF
+  BNE :+
+  LDA #HAS_MF
+  ORA faerie_checklist
+  STA faerie_checklist
+  DIALOG string_dialog_explain_mf
+  RTS
+:
+  LDA faerie_checklist
+  AND #HAS_RR
+  BNE :+
+  LDA inventory
+  AND #(FINISHED_RR | HAS_RR)
+  CMP #HAS_RR
+  BNE :+
+  LDA #HAS_RR
+  ORA faerie_checklist
+  STA faerie_checklist
+  DIALOG string_dialog_explain_rr
+  RTS
+:
+  LDA faerie_checklist
+  AND #FINAL_QUEST_EXPLANATION
+  BNE :+
+  LDA #FINAL_QUEST_EXPLANATION
+  ORA faerie_checklist
+  STA faerie_checklist
+  DIALOG string_dialog_explain_quest
+  RTS
+:
   RTS
 .endproc
 
@@ -5162,6 +5243,29 @@ strings:
 string_game_over: .byte "GAME_OVER", $00
 string_lives: .byte "LIVES_", WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU_WIN", $00
+string_dialog_main_explanation: .byte "HELLO",$0A
+                                .byte "I_SEE_YOU_HAVE_A", $0A
+                                .byte "NOTENDO_GAMEKID", $0A
+                                .byte $0A, $0A, $0A, $0A
+                                .byte "THE_PROPHECY_SAYS", $0A
+                                .byte "YOU_WILL_SAVE_US", $0A
+                                .byte "FROM_THE_MONSTER", $0A
+                                .byte "CALLED_THE_GLITCH", $0A
+                                .byte $0A, $0A, $0A
+                                .byte "IN_ORDER_TO_DO_THAT", $0A
+                                .byte "YOU_MUST_FIND_FOUR", $0A
+                                .byte "CARTRIDGES_OF_LEGEND", $0A
+                                .byte $0A, $0A, $0A, $0A
+                                .byte "PLAY_EACH_ONE_ON_YOUR", $0A
+                                .byte "GAMEKID_TO_ACQUIRE", $0A
+                                .byte "SPECIAL_POWERS", $0A
+                                .byte $0A, $0A, $0A, $0A
+                                .byte $00
+string_dialog_explain_wk: .byte $00
+string_dialog_explain_gi: .byte $00
+string_dialog_explain_mf: .byte $00
+string_dialog_explain_rr: .byte $00
+string_dialog_explain_quest: .byte $00
 string_dialog_wk_cartridge: .byte "YOU_GOT_A_NEW", $0A
                             .byte "CARTRIDGE_OF_LEGEND:", $0A
                             .byte $0A
