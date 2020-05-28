@@ -2301,6 +2301,18 @@ return:
   RTS
 .endproc
 
+.proc rand_boss_speed
+  JSR rand
+  LDA rng_seed
+  AND #%11
+  STA boss_h_speed
+  LDA #%11
+  SEC
+  SBC boss_h_speed
+  STA boss_v_speed
+  RTS
+.endproc
+
 .proc update_boss
   INC objects+Object::sprite_toggle, X
   LDA boss_horizontal
@@ -2315,12 +2327,7 @@ return:
   BCC @vertical_movement
   LDA #direction::left
   STA boss_horizontal
-:
-  JSR rand
-  LDA rng_seed
-  AND #%11
-  BEQ :-
-  STA boss_h_speed
+  JSR rand_boss_speed
   JMP @vertical_movement
 @move_left:
   LDA objects+Object::xcoord, X
@@ -2331,12 +2338,7 @@ return:
   BCS @vertical_movement
   LDA #direction::right
   STA boss_horizontal
-:
-  JSR rand
-  LDA rng_seed
-  AND #%11
-  BEQ :-
-  STA boss_h_speed
+  JSR rand_boss_speed
   
   ; JMP @vertical_movement
 
@@ -2353,12 +2355,7 @@ return:
   BCC @return
   LDA #direction::up
   STA boss_vertical
-:
-  JSR rand
-  LDA rng_seed
-  AND #%11
-  BEQ :-
-  STA boss_v_speed
+  JSR rand_boss_speed
   JMP @return
 @move_up:
   LDA objects+Object::ycoord, X
@@ -2369,12 +2366,7 @@ return:
   BCS @return
   LDA #direction::down
   STA boss_vertical
-:
-  JSR rand
-  LDA rng_seed
-  AND #%11
-  BEQ :-
-  STA boss_v_speed
+  JSR rand_boss_speed
   ; JMP @return
 
 @return:
