@@ -13,7 +13,7 @@ FT_SFX_STREAMS=4
 FT_DPCM_OFF= $c000
 
 ; music/sfx constants
-; MUSIC_TRACK_1 = 0
+MUSIC_TRACK_Retropian_Jingle = 0
 
 ; SFX_SOME_SFX = 0
 
@@ -322,7 +322,8 @@ RR_FLAG_DELAY=180
 .import rand
 .import unrle
 
-; .import music_data
+.import music_data
+; .import sfx_data
 
 .macro KIL ; pseudo instruction to kill the program
   .byte $12
@@ -443,10 +444,10 @@ clear_ram:
   LDA #%00011110  ; turn on screen
   STA PPUMASK
 
-  ; LDX #<some_music_data
-  ; LDY #>some_music_data
-  ; LDA #1
-  ; JSR FamiToneInit
+  LDX #<music_data
+  LDY #>music_data
+  LDA #1
+  JSR FamiToneInit
 
   ; LDX #<some_sfx_data
   ; LDY #>some_sfx_data
