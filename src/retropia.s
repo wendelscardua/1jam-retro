@@ -5286,7 +5286,19 @@ string_dialog_explain_wk: .byte "SO_YOU_FOUND", $0A
                           .byte $0A
                           .byte "GOOD_LUCK", $0A
                           .byte $00
-string_dialog_explain_gi: .byte $00
+string_dialog_explain_gi: .byte "I_SEE_YOU_FOUND", $0A
+                          .byte "GALAXY_INTRUDERS", $0A
+                          .byte $0A
+                          .byte "IN_THIS_GAME_YOU_ARE", $0A
+                          .byte "A_SPACESHIP_THAT_CAN", $0A
+                          .byte "SHOOT_AT_ENEMY_SHIPS", $0A
+                          .byte $0A
+                          .byte "JUST_PRESS_A_TO_FIRE", $0A
+                          .byte $0A
+                          .byte "BE_CAREFUL_AS_THE", $0A
+                          .byte "ENEMIES_GET_FASTER", $0A
+                          .byte "ON_THE_SECOND_HALF", $0A
+                          .byte "OF_THE_GAME", $0A
 string_dialog_explain_mf: .byte $00
 string_dialog_explain_rr: .byte $00
 string_dialog_explain_quest: .byte $00
