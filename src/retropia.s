@@ -5508,6 +5508,10 @@ screen_3_data:
         .byte object_type::cartridge_gi, $B0, $70, direction::up
         .word $0000
         .byte $00
+        .byte object_type::faerie, $40, $40, direction::up
+        .word $0000
+        .byte $00
+
         .byte $00 ; end of objects
 
 screen_4_data:
@@ -5534,6 +5538,9 @@ screen_5_data:
         .byte $00, $00, $00, $04
         .byte $00 ; end of walls
         .byte object_type::cartridge_wk, $50, $50, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::faerie, $A0, $90, direction::up
         .word $0000
         .byte $00
         .byte $00 ; end of objects
@@ -5587,12 +5594,18 @@ screen_7_data:
         .byte object_type::cartridge_rr, $48, $A0, direction::up
         .word $0000
         .byte $00
+        .byte object_type::faerie, $30, $40, direction::up
+        .word $0000
+        .byte $00
         .byte $00 ; end of objects
 screen_8_data:
         .word nametable_screen_ccco
         .byte $00, $00, $00, $06
         .byte $00 ; end of walls
         .byte object_type::cartridge_mf, $98, $C0, direction::up
+        .word $0000
+        .byte $00
+        .byte object_type::faerie, $80, $40, direction::up
         .word $0000
         .byte $00
         .byte $00 ; end of objects
