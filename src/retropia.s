@@ -1921,7 +1921,7 @@ return:
   RTS
 .endproc
 
-DIALOG_DELAY=$04
+DIALOG_DELAY=$02
 DIALOG_LAST_ROW=$07
 .proc main_dialog
   LDA dialog_current_row
@@ -1997,7 +1997,7 @@ erasing_rows:
   CLC
   ADC #$02
   STA PPUADDR
-  LDX #$13
+  LDX #$14
   LDA #$60
 @erase_loop:
   STA PPUDATA
@@ -5260,8 +5260,32 @@ string_dialog_main_explanation: .byte "HELLO",$0A
                                 .byte "GAMEKID_TO_ACQUIRE", $0A
                                 .byte "SPECIAL_POWERS", $0A
                                 .byte $0A, $0A, $0A, $0A
+                                .byte "IF_YOU_FIND_ANY_OF", $0A
+                                .byte "THOSE_CARTRIDGES", $0A
+                                .byte "YOU_CAN_TALK_TO_ONE", $0A
+                                .byte "OF_US_FAERIES_TO_GET", $0A
+                                .byte "AN_EXPLANATION_ON", $0A
+                                .byte "HOW_TO_PLAY_IT", $0A
+                                .byte $0A
+                                .byte "PRESSING_SELECT", $0A
+                                .byte "OPENS_THE", $0A
+                                .byte "INVENTORY_WHERE", $0A
+                                .byte "YOU_CAN_SEE_AND_PLAY", $0A
+                                .byte "THE_GAMES_YOU_FOUND"
                                 .byte $00
-string_dialog_explain_wk: .byte $00
+string_dialog_explain_wk: .byte "SO_YOU_FOUND", $0A
+                          .byte "WORKHOUSE_KEEPER", $0A
+                          .byte $0A
+                          .byte "IN_THIS_GAME_YOU", $0A
+                          .byte "MUST_PUSH_BLOCKS", $0A
+                          .byte "ON_MARKED_PLACES", $0A
+                          .byte $0A
+                          .byte "IN_CASE_YOU_MAKE_A", $0A
+                          .byte "MISTAKE_JUST_PRESS_B", $0A
+                          .byte "TO_RESET_THE_LEVEL", $0A
+                          .byte $0A
+                          .byte "GOOD_LUCK", $0A
+                          .byte $00
 string_dialog_explain_gi: .byte $00
 string_dialog_explain_mf: .byte $00
 string_dialog_explain_rr: .byte $00
