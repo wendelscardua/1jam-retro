@@ -453,7 +453,7 @@ clear_ram:
   ; JSR FamiToneSfxInit
 
   ; TODO: change to title screen when available
-  JSR start_game_setup
+  JSR title_setup
 
 forever:
   LDA nmis
@@ -469,10 +469,17 @@ etc:
   JMP forever
 .endproc
 
+.proc title_setup
+  LDA #game_states::main_title
+  STA game_state
+  JSR load_title_screen
+  RTS
+.endproc
+
 .proc start_game_setup
   LDA #game_states::main_playing
   STA game_state
-  LDA #$B ; XXX remove after implementing screen B
+  LDA #$01
   STA current_screen
   STA num_objects
   LDA #$80
@@ -686,6 +693,22 @@ end_of_objects_loop:
 
   STX num_objects
 
+  LDA #<palettes
+  STA palette_ptr
+  LDA #>palettes
+  STA palette_ptr+1
+  JSR load_nametable
+  LDA #$00
+  STA PPUSCROLL
+  STA PPUSCROLL
+  RTS
+.endproc
+
+.proc load_title_screen
+  LDA #<nametable_title
+  STA rle_ptr
+  LDA #>nametable_title
+  STA rle_ptr+1
   LDA #<palettes
   STA palette_ptr
   LDA #>palettes
@@ -1014,7 +1037,12 @@ next:
 .endproc
 
 .proc main_title
-  KIL
+  JSR readjoy
+  LDA pressed_buttons
+  AND #(BUTTON_START | BUTTON_A)
+  BEQ :+
+  JSR start_game_setup
+:
   RTS
 .endproc
 
@@ -5474,6 +5502,8 @@ rr_barrier_transitions:
         .byte %00001 ; from 11110
         .byte %00000 ; from 11111 (victory flag)
 
+nametable_title: .incbin "../assets/nametables/title.rle"
+
 nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
 nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
 nametable_screen_6: .incbin "../assets/nametables/screens/screen-6.rle"
@@ -5483,8 +5513,6 @@ nametable_screen_B: .incbin "../assets/nametables/screens/screen-b.rle"
 nametable_screen_oooo: .incbin "../assets/nametables/screens/grass-oooo.rle"
 nametable_screen_ccoc: .incbin "../assets/nametables/screens/grass-ccoc.rle"
 nametable_screen_ccco: .incbin "../assets/nametables/screens/grass-ccco.rle"
-
-nametable_screen_todo: .incbin "../assets/nametables/screens/grass-todo.rle"
 
 nametable_gamekid_boot: .incbin "../assets/nametables/gamekid-titles/boot.rle"
 nametable_wk_title: .incbin "../assets/nametables/gamekid-titles/wk.rle"
