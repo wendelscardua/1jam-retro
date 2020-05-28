@@ -841,6 +841,25 @@ skip_second_bg:
   JSR write_tiles
 .endmacro
 
+.macro DIALOG string_pointer, callback
+  LDA #<string_pointer
+  STA dialog_string_ptr
+  LDA #>string_pointer
+  STA dialog_string_ptr+1
+  .ifblank callback
+  LDA #<(dialog_to_playing-1)
+  STA dialog_callback
+  LDA #>(dialog_to_playing-1)
+  STA dialog_callback+1
+  .else
+  LDA #<(callback-1)
+  STA dialog_callback
+  LDA #>(callback-1)
+  STA dialog_callback+1
+  .endif
+  JSR begin_display_dialog
+.endmacro
+
 ; these act like printf, displaying the corresponding digit instead
 WRITE_X_SYMBOL = $FE
 
@@ -1432,6 +1451,13 @@ skip_boss_lives:
   .endrepeat
   BNE :-
 
+  LDA boss_lives
+  BPL no_victory
+
+  DIALOG string_dialog_victory, dialog_to_title
+
+no_victory:
+
   RTS
 .endproc
 
@@ -1735,24 +1761,11 @@ return:
   RTS
 .endproc
 
-.macro DIALOG string_pointer, callback
-  LDA #<string_pointer
-  STA dialog_string_ptr
-  LDA #>string_pointer
-  STA dialog_string_ptr+1
-  .ifblank callback
-  LDA #<(dialog_to_playing-1)
-  STA dialog_callback
-  LDA #>(dialog_to_playing-1)
-  STA dialog_callback+1
-  .else
-  LDA #<(callback-1)
-  STA dialog_callback
-  LDA #>(callback-1)
-  STA dialog_callback+1
-  .endif
-  JSR begin_display_dialog
-.endmacro
+.proc dialog_to_title
+  LDA #game_states::main_title
+  STA game_state
+  RTS
+.endproc
 
 .proc begin_display_dialog
   LDX #$1
@@ -2086,7 +2099,7 @@ stop_blinking:
   JSR load_screen
   RTS
 game_over:
-  DIALOG string_dialog_game_over, start_game_setup ; TODO return to title
+  DIALOG string_dialog_game_over, dialog_to_title
   RTS
 .endproc
 
@@ -5049,6 +5062,17 @@ string_dialog_game_over: .byte "THE_HERO_OF_GAMES", $0A
                          .byte "WAS_DEFEATED", $0A
                          .byte $0A
                          .byte "OUR_HOPE_IS_GONE", $00
+string_dialog_victory: .byte "THE_HERO_OF_GAMES", $0A
+                       .byte "DEFEATED_THE_GLITCH", $0A
+                       .byte $0A
+                       .byte "THE_LAND_OF_RETROPIA", $0A
+                       .byte "WAS_FINALLY_FREE", $0A
+                       .byte $0A
+                       .byte $0A
+                       .byte $0A
+                       .byte $0A
+                       .byte "______THE_END", $0A
+                       .byte $00
 string_dialog_wk_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
                       .byte $0A
                       .byte "PUSHING_BLOCKS", $0A
