@@ -1043,6 +1043,93 @@ next:
   BEQ :+
   JSR start_game_setup
 :
+
+  ; nice title animation
+  LDA #$00
+  STA sprite_counter
+
+  LDA nmis
+  AND #%10000
+  BEQ even_frame
+
+odd_frame:
+
+  LDA #$30
+  STA temp_x
+  LDA #$80
+  STA temp_y
+
+  LDA #<metasprite_16_data
+  STA addr_ptr
+  LDA #>metasprite_16_data
+  STA addr_ptr+1
+
+  JSR display_metasprite
+
+  LDA #$B0
+  STA temp_x
+  LDA #$80
+  STA temp_y
+
+  LDA #<metasprite_26_data
+  STA addr_ptr
+  LDA #>metasprite_26_data
+  STA addr_ptr+1
+
+  JSR display_metasprite
+
+  LDA #$38
+  STA temp_x
+  LDA #$B0
+  STA temp_y
+
+  LDA #<text_cursor_sprite
+  STA addr_ptr
+  LDA #>text_cursor_sprite
+  STA addr_ptr+1
+
+  JSR display_metasprite
+
+  RTS
+
+even_frame:
+  LDA #$30
+  STA temp_x
+  LDA #$80
+  STA temp_y
+
+  LDA #<metasprite_17_data
+  STA addr_ptr
+  LDA #>metasprite_17_data
+  STA addr_ptr+1
+
+  JSR display_metasprite
+
+
+  LDA #$B0
+  STA temp_x
+  LDA #$78
+  STA temp_y
+
+  LDA #<metasprite_26_data
+  STA addr_ptr
+  LDA #>metasprite_26_data
+  STA addr_ptr+1
+
+  JSR display_metasprite
+
+  LDA #$40
+  STA temp_x
+  LDA #$B0
+  STA temp_y
+
+  LDA #<text_cursor_sprite
+  STA addr_ptr
+  LDA #>text_cursor_sprite
+  STA addr_ptr+1
+
+  JSR display_metasprite
+
   RTS
 .endproc
 
@@ -1482,7 +1569,7 @@ skip_boss_lives:
   LDA boss_lives
   BPL no_victory
 
-  DIALOG string_dialog_victory, dialog_to_title
+  DIALOG string_dialog_victory, title_setup
 
 no_victory:
 
@@ -1736,7 +1823,7 @@ kaboom:
   BEQ @next
 
   JSR delete_nth_object
-  
+
 @next:
   DEX
   BPL @loop
@@ -1785,12 +1872,6 @@ return:
 
 .proc dialog_to_playing
   LDA #game_states::main_playing
-  STA game_state
-  RTS
-.endproc
-
-.proc dialog_to_title
-  LDA #game_states::main_title
   STA game_state
   RTS
 .endproc
@@ -2127,7 +2208,7 @@ stop_blinking:
   JSR load_screen
   RTS
 game_over:
-  DIALOG string_dialog_game_over, dialog_to_title
+  DIALOG string_dialog_game_over, title_setup
   RTS
 .endproc
 
@@ -2380,7 +2461,7 @@ return:
   LDA #direction::right
   STA boss_horizontal
   JSR rand_boss_speed
-  
+
   ; JMP @vertical_movement
 
 @vertical_movement:
@@ -5017,7 +5098,7 @@ is_enemy_per_type:
         .byte $00 ; pushable block
         .byte $00 ; breakable wall
         .byte $01 ; glitch boss
-       
+
 window_ppu_addrs_l:
         .byte $84
         .byte $A4
@@ -5320,9 +5401,9 @@ screen_9_data:
         .byte $70, $A0, $AF, $AF, $00
         .byte $70, $B0, $7F, $BF, $00
         .byte $38, $A0, $5F, $AF, $00
-        
+
         .byte $38, $38, $4F, $9F, $00
-        .byte $50, $38, $EF, $4F, $00        
+        .byte $50, $38, $EF, $4F, $00
         .byte $00 ; end of walls
 
         .byte object_type::pushable_block, $A0, $90, direction::left
@@ -5377,7 +5458,7 @@ screen_A_data:
         .byte $30, $20, $8F, $2F, $00
         .byte $90, $30, $AF, $3F, $00
         .byte $C0, $30, $CF, $3F, $00
-         
+
         .byte $00 ; end of walls
 
         .byte object_type::breakable_wall, $B0, $20, direction::up
