@@ -2371,6 +2371,10 @@ collided:
   LDA faerie_checklist
   AND #FINAL_QUEST_EXPLANATION
   BNE :+
+  LDA inventory
+  AND #(FINISHED_WK | FINISHED_GI | FINISHED_MF | FINISHED_RR)
+  CMP #(FINISHED_WK | FINISHED_GI | FINISHED_MF | FINISHED_RR)
+  BNE :+
   LDA #FINAL_QUEST_EXPLANATION
   ORA faerie_checklist
   STA faerie_checklist
@@ -5336,7 +5340,20 @@ string_dialog_explain_rr: .byte "YOU_FOUND_RIVER_RAY", $0A
                           .byte $0A
                           .byte "GOOD_LUCK"
                           .byte $00
-string_dialog_explain_quest: .byte $00
+string_dialog_explain_quest: .byte "BRAVE_HERO", $0A
+                             .byte "NOW_THAT_YOU_HAVE", $0A
+                             .byte "THE_POWERS_FROM_THE", $0A
+                             .byte "CARTRIDGES_OF_LEGEND", $0A
+                             .byte "YOU_CAN_FIGHT_THE", $0A
+                             .byte "GLITCH", $0A
+                             .byte $0A
+                             .byte "THE_GLITCH_IS_ON_THE", $0A
+                             .byte "GOLDEN_ROOM_IN_THE", $0A
+                             .byte "NORTH_OF_OUR_KINGDOM", $0A
+                             .byte $0A
+                             .byte "IT_IS_THE_LOCATION_OF", $0A
+                             .byte "THE_THRONE_OF_GAMES"
+                             .byte $00
 string_dialog_wk_cartridge: .byte "YOU_GOT_A_NEW", $0A
                             .byte "CARTRIDGE_OF_LEGEND:", $0A
                             .byte $0A
