@@ -2,6 +2,8 @@ PROJECT=retropia
 LD65_FLAGS=
 CA65_FLAGS=
 
+.PHONY : debug run
+
 ${PROJECT}.nes: src/${PROJECT}.o src/reset.o src/readjoy.o src/rand.o src/unrle.o src/audio-data.o
 	ld65 $^ -t nes -o ${PROJECT}.nes ${LD65_FLAGS}
 
@@ -20,3 +22,6 @@ src/audio-data.o: src/audio-data.s assets/audio/*.s
 
 clean:
 	rm src/*.o *.nes labels.txt
+
+run: debug
+	Nintendulator.exe `wslpath -w -a ${PROJECT}.nes`
