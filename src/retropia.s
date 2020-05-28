@@ -5278,7 +5278,7 @@ string_dialog_explain_wk: .byte "SO_YOU_FOUND", $0A
                           .byte $0A
                           .byte "IN_THIS_GAME_YOU", $0A
                           .byte "MUST_PUSH_BLOCKS", $0A
-                          .byte "ON_MARKED_PLACES", $0A
+                          .byte "ONTO_MARKED_PLACES", $0A
                           .byte $0A
                           .byte "IN_CASE_YOU_MAKE_A", $0A
                           .byte "MISTAKE_JUST_PRESS_B", $0A
@@ -5299,8 +5299,43 @@ string_dialog_explain_gi: .byte "I_SEE_YOU_FOUND", $0A
                           .byte "ENEMIES_GET_FASTER", $0A
                           .byte "ON_THE_SECOND_HALF", $0A
                           .byte "OF_THE_GAME", $0A
-string_dialog_explain_mf: .byte $00
-string_dialog_explain_rr: .byte $00
+                          .byte $0A
+                          .byte "GOOD_LUCK"
+                          .byte $00
+string_dialog_explain_mf: .byte "YOU_GOT_MINE_FINDER", $0A
+                          .byte $0A
+                          .byte "IN_THIS_GAME_YOU", $0A
+                          .byte "MUST_DEDUCE_WHICH", $0A
+                          .byte "CELLS_HAVE_BOMBS_OR", $0A
+                          .byte "NOT", $0A
+                          .byte $0A
+                          .byte "PRESS_A_TO_OPEN_CELL", $0A
+                          .byte "PRESS_B_TO_PUT_FLAGS", $0A
+                          .byte "YOU_WIN_IF_YOU_OPEN", $0A
+                          .byte "ALL_THE_SAFE_CELLS", $0A
+                          .byte $0A, $0A, $0A
+                          .byte "SAFE_CELLS_ARE_EITHER", $0A
+                          .byte "EMPTY_IF_THERE_ARE_NO", $0A
+                          .byte "BOMBS_AROUND_OR_THEY", $0A
+                          .byte "CONTAIN_THE_NUMBER_OF", $0A
+                          .byte "BOMBS_ON_CELLS_AROUND", $0A
+                          .byte "THEM", $0A
+                          .byte $0A
+                          .byte "GOOD_LUCK"
+                          .byte $00
+string_dialog_explain_rr: .byte "YOU_FOUND_RIVER_RAY", $0A
+                          .byte $0A
+                          .byte "IN_THIS_ONE_YOU_ARE", $0A
+                          .byte "A_MANTA_RAY_AND_YOU", $0A
+                          .byte "HAVE_TO_DODGE_SPIKY", $0A
+                          .byte "LOGS", $0A
+                          .byte $0A
+                          .byte "THE_LOGS_GET_FASTER", $0A
+                          .byte "AS_YOU_GET_NEARER", $0A
+                          .byte "THE_FINISH_LINE", $0A
+                          .byte $0A
+                          .byte "GOOD_LUCK"
+                          .byte $00
 string_dialog_explain_quest: .byte $00
 string_dialog_wk_cartridge: .byte "YOU_GOT_A_NEW", $0A
                             .byte "CARTRIDGE_OF_LEGEND:", $0A
