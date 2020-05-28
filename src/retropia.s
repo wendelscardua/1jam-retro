@@ -8,7 +8,7 @@ FT_PAL_SUPPORT=0
 FT_NTSC_SUPPORT=1
 FT_SFX_ENABLE=1
 FT_THREAD=1
-FT_DPCM_ENABLE=1
+FT_DPCM_ENABLE=0
 FT_SFX_STREAMS=4
 FT_DPCM_OFF= $c000
 
@@ -465,7 +465,7 @@ forever:
   ; new frame code
   JSR rand
   JSR game_state_handler
-  ; JSR FamiToneUpdate
+  JSR FamiToneUpdate
 
 etc:
   JMP forever
@@ -475,10 +475,13 @@ etc:
   LDA #game_states::main_title
   STA game_state
   JSR load_title_screen
+  LDA #MUSIC_TRACK_Retropian_Jingle
+  JSR FamiToneMusicPlay
   RTS
 .endproc
 
 .proc start_game_setup
+  JSR FamiToneMusicStop
   LDA #game_states::main_playing
   STA game_state
   LDA #$01
