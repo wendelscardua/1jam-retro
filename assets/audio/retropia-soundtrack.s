@@ -18,28 +18,28 @@ retropia_soundtrack_music_data:
 	.word @env13, @env0, @env0
 	.byte $00
 	.byte $30 ;instrument 03 (Noise-Bumbo (F#2))
-	.word @env10, @env9, @env0
+	.word @env8, @env7, @env0
 	.byte $00
 	.byte $30 ;instrument 04 (NoiseHiHat)
-	.word @env3, @env0, @env0
-	.byte $00
-	.byte $30 ;instrument 05 (Noise-Prato (D#2))
-	.word @env6, @env8, @env0
-	.byte $00
-	.byte $30 ;instrument 06 (NoiseSnare)
-	.word @env11, @env0, @env0
-	.byte $00
-	.byte $70 ;instrument 07 (SimpleBacking)
-	.word @env4, @env0, @env0
-	.byte $00
-	.byte $b0 ;instrument 08 (SimpleLead)
 	.word @env2, @env0, @env0
 	.byte $00
+	.byte $30 ;instrument 05 (Noise-Prato (D#2))
+	.word @env4, @env6, @env0
+	.byte $00
+	.byte $30 ;instrument 06 (NoiseSnare)
+	.word @env9, @env0, @env0
+	.byte $00
+	.byte $70 ;instrument 07 (SimpleBacking)
+	.word @env12, @env0, @env0
+	.byte $00
+	.byte $b0 ;instrument 08 (SimpleLead)
+	.word @env11, @env0, @env0
+	.byte $00
 	.byte $30 ;instrument 09 (Tri-Bumbo)
-	.word @env15, @env0, @env7
+	.word @env15, @env0, @env5
 	.byte $00
 	.byte $30 ;instrument 0a (Tri-Caixa)
-	.word @env5, @env0, @env12
+	.word @env3, @env0, @env10
 	.byte $00
 
 @samples:
@@ -48,27 +48,27 @@ retropia_soundtrack_music_data:
 @env1:
 	.byte $c5,$cc,$c9,$c6,$c4,$c2,$00,$05
 @env2:
-	.byte $c8,$c7,$c6,$c5,$c4,$c3,$00,$05
-@env3:
 	.byte $cf,$cd,$ca,$c0,$00,$03
-@env4:
-	.byte $c6,$c5,$c4,$c4,$c3,$c3,$00,$05
-@env5:
+@env3:
 	.byte $cf,$02,$c0,$00,$02
-@env6:
+@env4:
 	.byte $c8,$c6,$02,$c0,$00,$03
-@env7:
+@env5:
 	.byte $c0,$f9,$00,$01
-@env8:
+@env6:
 	.byte $c0,$c3,$00,$01
-@env9:
+@env7:
 	.byte $c3,$be,$bf,$00,$02
-@env10:
+@env8:
 	.byte $cb,$ca,$c8,$c6,$c4,$c2,$c0,$00,$06
-@env11:
+@env9:
 	.byte $cf,$cd,$cb,$c9,$c7,$c6,$c4,$c2,$00,$07
-@env12:
+@env10:
 	.byte $c0,$84,$00,$01
+@env11:
+	.byte $c6,$c8,$c6,$c5,$c4,$c3,$00,$05
+@env12:
+	.byte $c5,$c6,$c4,$c3,$c2,$c1,$00,$05
 @env13:
 	.byte $c8,$17,$c7,$c6,$c5,$c4,$c3,$02,$c2,$02,$c1,$04,$c0,$00,$0c
 @env14:
@@ -202,18 +202,18 @@ retropia_soundtrack_music_data:
 @ref26:
 	.byte $50,$ed,$5a,$99,$48,$99,$5a,$99,$50,$99
 @ref27:
-	.byte $4a,$ed,$50,$99,$56,$99,$4a,$99,$3e,$99
+	.byte $4a,$b3,$00,$9b,$48,$8b,$42,$8b,$46,$8b,$3e,$8b,$42,$8b,$3a,$8b,$3e,$8b,$36,$8b,$38,$97,$00
 	.byte $fd
 	.word @song1ch0loop
 
 @song1ch1:
 @ref28:
-	.byte $8e,$40,$99,$4a,$b5,$52,$b3,$00,$52,$b5,$00,$99
+	.byte $8e,$40,$99,$4a,$b5,$52,$b3,$00,$52,$b3,$00,$9b
 @song1ch1loop:
 @ref29:
 	.byte $8e,$40,$ed,$46,$99,$42,$99,$3c,$b5
 @ref30:
-	.byte $40,$d1,$44,$b7,$46,$97,$3e,$b5
+	.byte $40,$d1,$44,$b5,$46,$99,$3e,$b5
 @ref31:
 	.byte $36,$99,$32,$99,$38,$8b,$30,$8b,$28,$8b,$28,$99,$2e,$8b,$36,$b5,$2e,$99
 @ref32:
@@ -223,31 +223,31 @@ retropia_soundtrack_music_data:
 @ref34:
 	.byte $40,$ed,$48,$99,$4a,$99,$40,$b5
 @ref35:
-	.byte $46,$ed,$3e,$99,$42,$99,$46,$b5
+	.byte $46,$ed,$3e,$99,$42,$99,$46,$b3,$00
 @ref36:
-	.byte $3e,$b5,$42,$b5,$48,$99,$42,$b5,$46,$99
+	.byte $3e,$b3,$00,$9b,$3e,$8b,$3a,$8b,$42,$8b,$38,$8b,$3e,$8b,$32,$8b,$2e,$b3,$00
 	.byte $fd
 	.word @song1ch1loop
 
 @song1ch2:
 @ref37:
-	.byte $80,$36,$97,$00,$8e,$28,$97,$00,$28,$97,$00,$28,$97,$00,$80,$36,$97,$00,$8e,$32,$97,$00,$32,$97,$00,$32,$97,$80,$36
+	.byte $80,$20,$97,$00,$8e,$28,$97,$00,$28,$97,$00,$28,$99,$80,$20,$97,$00,$8e,$32,$97,$00,$32,$97,$00,$32,$99
 @song1ch2loop:
 @ref38:
-	.byte $99,$00,$8e,$32,$97,$00,$32,$97,$00,$32,$97,$00,$80,$36,$97,$00,$8e,$32,$97,$00,$32,$97,$00,$32,$97,$00
-	.byte $ff,$18
+	.byte $80,$20,$97,$00,$8e,$32,$97,$00,$32,$97,$00,$32,$97,$00,$80,$20,$97,$00,$8e,$32,$97,$00,$32,$97,$00,$32,$99
+	.byte $ff,$16
 	.word @ref37
 	.byte $ff,$17
 	.word @ref38
-	.byte $ff,$18
+	.byte $ff,$16
 	.word @ref37
 	.byte $ff,$17
 	.word @ref38
-	.byte $ff,$18
+	.byte $ff,$16
 	.word @ref37
 	.byte $ff,$17
 	.word @ref38
-	.byte $ff,$18
+	.byte $ff,$16
 	.word @ref37
 	.byte $fd
 	.word @song1ch2loop
