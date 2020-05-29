@@ -15,6 +15,7 @@ FT_DPCM_OFF= $c000
 ; music/sfx constants
 MUSIC_TRACK_Retropian_Jingle = 0
 MUSIC_TRACK_Saccharine_Saga = 1
+MUSIC_TRACK_Gamekid_Booting = 2
 
 ; SFX_SOME_SFX = 0
 
@@ -1207,6 +1208,8 @@ even_frame:
   STA current_nametable
   LDA #$00
   STA frame_counter
+  LDA #MUSIC_TRACK_Gamekid_Booting
+  JSR FamiToneMusicPlay
 return:
   RTS
 .endproc
