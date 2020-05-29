@@ -80,13 +80,13 @@ retropia_soundtrack_music_data:
 	.byte $fb, $01
 @song0ch0loop:
 @ref0:
-	.byte $af,$84,$30,$ad,$38,$dd,$46,$f9,$c3
+	.byte $b1,$84,$30,$db,$38,$ad,$46,$f9,$c3
 @ref1:
-	.byte $48,$95,$44,$95,$48,$ad,$40,$ad,$44,$ad,$3a,$f9,$ab,$00,$95
+	.byte $48,$95,$44,$95,$48,$ad,$40,$ad,$3a,$ad,$40,$f9,$ab,$00,$95
 @ref2:
-	.byte $af,$30,$ad,$38,$dd,$46,$f9,$c3
+	.byte $b1,$30,$db,$38,$ad,$46,$f9,$c3
 @ref3:
-	.byte $46,$dd,$38,$ad,$3c,$ad,$34,$ad,$32,$ad,$2e,$c5,$00,$95
+	.byte $46,$dd,$38,$ad,$3c,$ad,$40,$ab,$3c,$ad,$38,$c7,$00,$95
 @ref4:
 	.byte $af,$38,$ad,$3c,$ad,$4a,$dd,$42,$f9,$93
 @ref5:
