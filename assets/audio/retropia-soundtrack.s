@@ -51,23 +51,23 @@ retropia_soundtrack_music_data:
 	.byte $cf,$05,$c0,$c0,$c0,$00,$04
 
 @song0ch0:
-	.byte $fb, $0c
+	.byte $fb, $01
 @song0ch0loop:
 @ref0:
-	.byte $83,$82,$31,$38,$85,$46,$8d
+	.byte $af,$82,$30,$ad,$38,$dd,$46,$f9,$c3
 @ref1:
-	.byte $48,$44,$49,$41,$45,$3a,$8b,$00
+	.byte $48,$95,$44,$95,$48,$ad,$40,$ad,$44,$ad,$3a,$f9,$ab,$00,$95
 @ref2:
-	.byte $83,$31,$38,$85,$46,$8d
+	.byte $af,$30,$ad,$38,$dd,$46,$f9,$c3
 @ref3:
-	.byte $46,$85,$39,$3d,$35,$38,$87,$00
+	.byte $46,$dd,$38,$ad,$3c,$ad,$34,$ad,$38,$f5,$00,$95
 @ref4:
-	.byte $83,$39,$3d,$4a,$85,$42,$89
+	.byte $af,$38,$ad,$3c,$ad,$4a,$dd,$42,$f9,$93
 @ref5:
-	.byte $46,$85,$50,$4c,$46,$3c,$42,$35,$35,$3c,$83
-	.byte $ff,$06
-	.word @ref2
+	.byte $46,$dd,$50,$95,$4c,$95,$46,$95,$3c,$95,$42,$95,$34,$ad,$34,$ad,$3c,$c5
 	.byte $ff,$08
+	.word @ref2
+	.byte $ff,$0c
 	.word @ref3
 	.byte $fd
 	.word @song0ch0loop
@@ -75,20 +75,20 @@ retropia_soundtrack_music_data:
 @song0ch1:
 @song0ch1loop:
 @ref6:
-	.byte $80,$13,$17,$1d,$17,$13,$17,$1d,$16,$81
+	.byte $80,$12,$ad,$16,$ad,$1c,$ad,$16,$ad,$12,$ad,$16,$ad,$1c,$ad,$16,$ad
 @ref7:
-	.byte $1b,$21,$29,$21,$1b,$21,$29,$20,$81
+	.byte $1a,$ad,$20,$ad,$28,$ad,$20,$ad,$1a,$ad,$20,$ad,$28,$ad,$20,$ad
 @ref8:
-	.byte $13,$17,$1d,$17,$13,$17,$1d,$16,$81
-	.byte $ff,$09
+	.byte $12,$ad,$16,$ad,$1c,$ad,$16,$ad,$12,$ad,$16,$ad,$1c,$ad,$16,$ad
+	.byte $ff,$10
 	.word @ref7
-	.byte $ff,$09
+	.byte $ff,$10
 	.word @ref8
-	.byte $ff,$09
+	.byte $ff,$10
 	.word @ref7
-	.byte $ff,$09
+	.byte $ff,$10
 	.word @ref8
-	.byte $ff,$09
+	.byte $ff,$10
 	.word @ref7
 	.byte $fd
 	.word @song0ch1loop
@@ -96,20 +96,20 @@ retropia_soundtrack_music_data:
 @song0ch2:
 @song0ch2loop:
 @ref9:
-	.byte $88,$26,$00,$83,$26,$00,$83,$26,$00,$8a,$2b,$88,$26,$00,$8a,$2a,$81
-	.byte $ff,$0d
+	.byte $88,$26,$95,$00,$c5,$26,$95,$00,$c5,$26,$95,$00,$95,$8a,$2a,$ad,$88,$26,$95,$00,$95,$8a,$2a,$ad
+	.byte $ff,$14
 	.word @ref9
-	.byte $ff,$0d
+	.byte $ff,$14
 	.word @ref9
-	.byte $ff,$0d
+	.byte $ff,$14
 	.word @ref9
-	.byte $ff,$0d
+	.byte $ff,$14
 	.word @ref9
-	.byte $ff,$0d
+	.byte $ff,$14
 	.word @ref9
-	.byte $ff,$0d
+	.byte $ff,$14
 	.word @ref9
-	.byte $ff,$0d
+	.byte $ff,$14
 	.word @ref9
 	.byte $fd
 	.word @song0ch2loop
@@ -117,20 +117,20 @@ retropia_soundtrack_music_data:
 @song0ch3:
 @song0ch3loop:
 @ref10:
-	.byte $84,$3d,$86,$38,$38,$84,$3d,$86,$38,$84,$3c,$83,$86,$38,$38,$84,$3d,$86,$38,$81
-	.byte $ff,$0c
+	.byte $84,$3c,$ad,$86,$38,$95,$38,$95,$84,$3c,$ad,$86,$38,$95,$84,$3c,$c5,$86,$38,$95,$38,$95,$84,$3c,$ad,$86,$38,$ad
+	.byte $ff,$14
 	.word @ref10
-	.byte $ff,$0c
+	.byte $ff,$14
 	.word @ref10
-	.byte $ff,$0c
+	.byte $ff,$14
 	.word @ref10
-	.byte $ff,$0c
+	.byte $ff,$14
 	.word @ref10
-	.byte $ff,$0c
+	.byte $ff,$14
 	.word @ref10
-	.byte $ff,$0c
+	.byte $ff,$14
 	.word @ref10
-	.byte $ff,$0c
+	.byte $ff,$14
 	.word @ref10
 	.byte $fd
 	.word @song0ch3loop
@@ -138,20 +138,20 @@ retropia_soundtrack_music_data:
 @song0ch4:
 @song0ch4loop:
 @ref11:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 @ref12:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 @ref13:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 @ref14:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 @ref15:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 @ref16:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 @ref17:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 @ref18:
-	.byte $9f
+	.byte $f9,$f9,$f9,$91
 	.byte $fd
 	.word @song0ch4loop
