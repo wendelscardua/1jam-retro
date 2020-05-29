@@ -14,6 +14,7 @@ FT_DPCM_OFF= $c000
 
 ; music/sfx constants
 MUSIC_TRACK_Retropian_Jingle = 0
+MUSIC_TRACK_Saccharine_Saga = 1
 
 ; SFX_SOME_SFX = 0
 
@@ -481,7 +482,8 @@ etc:
 .endproc
 
 .proc start_game_setup
-  JSR FamiToneMusicStop
+  LDA #MUSIC_TRACK_Saccharine_Saga
+  JSR FamiToneMusicPlay
   LDA #game_states::main_playing
   STA game_state
   LDA #$01
