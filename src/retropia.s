@@ -4247,6 +4247,8 @@ bomb:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
 
   LDA #music_track::Gamekid_Defeat
   JSR FamiToneMusicPlay
