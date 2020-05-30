@@ -2740,6 +2740,9 @@ stop_right:
 .endproc
 
 .proc quit_gamekid
+  LDA #music_track::Saccharine_Saga
+  JSR FamiToneMusicPlay
+
   LDA game_state
   PHA
 
@@ -2837,6 +2840,8 @@ wait_for_title:
   LDA #$00
   STA current_sub_level
   JSR wk_load_level_data
+  LDA #music_track::Sokowhat
+  JSR FamiToneMusicPlay
 
 wait_for_level:
   ; TODO: optimize
@@ -3262,6 +3267,8 @@ win:
   STA inventory
   LDA #game_states::wk_win
   STA game_state
+  LDA #music_track::Gamekid_Victory
+  JSR FamiToneMusicPlay
   LDA #$00
   STA frame_counter
 return:
