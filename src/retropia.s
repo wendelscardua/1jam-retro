@@ -18,16 +18,11 @@ FT_DPCM_OFF= $c000
   Saccharine_Saga
   Gamekid_Booting
   Sokowhat
-  Sokowin
   Invasion
-  Invincible
-  Inconceivable
   Sweeping_Mines
-  Sweeping_Victory
-  Sweeping_Defeat
   Log_a_rhythm
-  Fi_ni_sh_Line
-  Seems_Fishy
+  Gamekid_Victory
+  Gamekid_Defeat
   Glitching
   Free_Faerie
 .endenum
