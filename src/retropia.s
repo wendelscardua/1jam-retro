@@ -2040,6 +2040,9 @@ DIALOG_LAST_ROW=$07
   STA PPUADDR
   STA PPUSCROLL
   STA PPUSCROLL
+  LDA #sfx::Typing_Text
+  LDX #FT_SFX_CH3
+  JSR FamiToneSfxPlay
 
 increment_pointers:
   INC dialog_string_ptr
