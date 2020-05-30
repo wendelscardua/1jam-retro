@@ -1,4 +1,5 @@
 *.o
 *.nes
+*.nsf
 /labels.txt
 *.dbg
