@@ -10,5 +10,5 @@ Tracks
 06. Log-a-rhythm - River Ray title/theme
 07. Gamekid Victory
 08. Gamekid Defeat
-09. Glitching - Boss theme (TODO)
+09. Glitching - Boss theme
 10. Free Faerie - Victory (TODO)
