@@ -13,9 +13,24 @@ FT_SFX_STREAMS=4
 FT_DPCM_OFF= $c000
 
 ; music/sfx constants
-MUSIC_TRACK_Retropian_Jingle = 0
-MUSIC_TRACK_Saccharine_Saga = 1
-MUSIC_TRACK_Gamekid_Booting = 2
+.enum music_track
+  Retropian_Jingle
+  Saccharine_Saga
+  Gamekid_Booting
+  Sokowhat
+  Sokowin
+  Invasion
+  Invincible
+  Inconceivable
+  Sweeping_Mines
+  Sweeping_Victory
+  Sweeping_Defeat
+  Log_a_rhythm
+  Fi_ni_sh_Line
+  Seems_Fishy
+  Glitching
+  Free_Faerie
+.endenum
 
 ; SFX_SOME_SFX = 0
 
@@ -47,7 +62,7 @@ MUSIC_TRACK_Gamekid_Booting = 2
 
 ; game config
 
-GAMEKID_DELAY = 60
+GAMEKID_DELAY = 120
 HAS_WK =      %00000001
 HAS_GI =      %00000010
 HAS_MF =      %00000100
@@ -477,13 +492,13 @@ etc:
   LDA #game_states::main_title
   STA game_state
   JSR load_title_screen
-  LDA #MUSIC_TRACK_Retropian_Jingle
+  LDA #music_track::Retropian_Jingle
   JSR FamiToneMusicPlay
   RTS
 .endproc
 
 .proc start_game_setup
-  LDA #MUSIC_TRACK_Saccharine_Saga
+  LDA #music_track::Saccharine_Saga
   JSR FamiToneMusicPlay
   LDA #game_states::main_playing
   STA game_state
@@ -1208,7 +1223,7 @@ even_frame:
   STA current_nametable
   LDA #$00
   STA frame_counter
-  LDA #MUSIC_TRACK_Gamekid_Booting
+  LDA #music_track::Gamekid_Booting
   JSR FamiToneMusicPlay
 return:
   RTS
