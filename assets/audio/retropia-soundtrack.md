@@ -11,4 +11,4 @@ Tracks
 07. Gamekid Victory
 08. Gamekid Defeat
 09. Glitching - Boss theme
-10. Free Faerie - Victory (TODO)
+10. Free Faerie - Victory
