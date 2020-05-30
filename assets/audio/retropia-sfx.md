@@ -12,6 +12,7 @@
 - Ignited bomb
 - Explosion
 - Typing text
+- Damage
 
 ## TODO ##
 
@@ -20,4 +21,3 @@
 - Read more
 - Pushed block
 - Swimming
-- Damage

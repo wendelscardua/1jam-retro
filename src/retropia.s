@@ -2526,11 +2526,18 @@ collide:
 .endproc
 
 .proc damage_player
+  TXA
+  PHA
   DEC lives
+  LDA #sfx::Damage
+  LDX #FT_SFX_CH3
+  JSR FamiToneSfxPlay
   LDA #$00
   STA frame_counter
   LDA #game_states::main_dying
   STA game_state
+  PLA
+  TAX
   RTS
 .endproc
 
