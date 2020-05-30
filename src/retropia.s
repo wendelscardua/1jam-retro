@@ -70,6 +70,8 @@ FINISHED_RR = %10000000
 MAIN_EXPLANATION = %00010000
 FINAL_QUEST_EXPLANATION = %00100000
 
+BOSS_SCREEN = $0B
+
 .segment "ZEROPAGE"
 FT_TEMP: .res 3
 .segment "FAMITONE"
@@ -214,6 +216,7 @@ inventory_selection: .res 1
 current_nametable: .res 1
 current_screen: .res 1
 current_exits: .res 4 ; up, down, left, right
+current_screen_soundtrack: .res 1
 next_screen_direction: .res 1
 current_sub_level: .res 1
 frame_counter: .res 1
@@ -494,6 +497,7 @@ etc:
 
 .proc start_game_setup
   LDA #music_track::Saccharine_Saga
+  STA current_screen_soundtrack
   JSR FamiToneMusicPlay
   LDA #game_states::main_playing
   STA game_state
@@ -722,6 +726,26 @@ end_of_objects_loop:
   LDA #$00
   STA PPUSCROLL
   STA PPUSCROLL
+
+  ; if coming from/to boss screen, change soundtrack
+  LDA current_screen
+  CMP #BOSS_SCREEN
+  BNE no_boss_screen
+boss_screen:
+  LDA #music_track::Glitching
+  CMP current_screen_soundtrack
+  BEQ no_change
+  STA current_screen_soundtrack
+  JSR FamiToneMusicPlay
+  RTS
+no_boss_screen:
+  LDA #music_track::Saccharine_Saga
+  CMP current_screen_soundtrack
+  BEQ no_change
+  STA current_screen_soundtrack
+  JSR FamiToneMusicPlay
+  RTS
+no_change:
   RTS
 .endproc
 
@@ -1592,6 +1616,9 @@ skip_boss_lives:
 
   LDA boss_lives
   BPL no_victory
+
+  LDA #music_track::Free_Faerie
+  JSR FamiToneMusicPlay
 
   DIALOG string_dialog_victory, title_setup
 
@@ -2740,7 +2767,7 @@ stop_right:
 .endproc
 
 .proc quit_gamekid
-  LDA #music_track::Saccharine_Saga
+  LDA current_screen_soundtrack
   JSR FamiToneMusicPlay
 
   LDA game_state
