@@ -11,13 +11,13 @@
 - Fireball collision
 - Ignited bomb
 - Explosion
+- Read more
 - Typing text
 - Damage
+- Swimming
 
 ## TODO ##
 
 ### Main game ###
 
-- Read more
 - Pushed block
-- Swimming

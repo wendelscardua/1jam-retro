@@ -1085,6 +1085,15 @@ loop:
   BEQ normal_collision
   LDA #1
   STA swimming ; start swimming
+  LDA nmis
+  AND #%111
+  BNE :+
+  save_regs
+  LDA #sfx::Swimming
+  LDX #FT_SFX_CH3
+  JSR FamiToneSfxPlay
+  restore_regs
+:
   JMP next ; but may be colliding with something else
 normal_collision:
   LDA #1
