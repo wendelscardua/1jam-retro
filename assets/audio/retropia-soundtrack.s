@@ -680,9 +680,9 @@ retropia_soundtrack_music_data:
 
 @song8ch0:
 	.byte $fb, $01
-@song8ch0loop:
 @ref150:
-	.byte $f9,$f5
+	.byte $86,$3a,$a5,$34,$a5,$36,$a5,$34,$a5,$2e,$cb,$00
+@song8ch0loop:
 @ref151:
 	.byte $f9,$f5
 @ref152:
@@ -691,9 +691,9 @@ retropia_soundtrack_music_data:
 	.word @song8ch0loop
 
 @song8ch1:
-@song8ch1loop:
 @ref153:
-	.byte $f9,$f5
+	.byte $82,$24,$cd,$2a,$a5,$28,$a5,$24,$cb,$00
+@song8ch1loop:
 @ref154:
 	.byte $f9,$f5
 @ref155:
@@ -702,9 +702,9 @@ retropia_soundtrack_music_data:
 	.word @song8ch1loop
 
 @song8ch2:
-@song8ch2loop:
 @ref156:
 	.byte $f9,$f5
+@song8ch2loop:
 @ref157:
 	.byte $f9,$f5
 @ref158:
@@ -713,9 +713,9 @@ retropia_soundtrack_music_data:
 	.word @song8ch2loop
 
 @song8ch3:
-@song8ch3loop:
 @ref159:
 	.byte $f9,$f5
+@song8ch3loop:
 @ref160:
 	.byte $f9,$f5
 @ref161:
@@ -724,9 +724,9 @@ retropia_soundtrack_music_data:
 	.word @song8ch3loop
 
 @song8ch4:
-@song8ch4loop:
 @ref162:
 	.byte $f9,$f5
+@song8ch4loop:
 @ref163:
 	.byte $f9,$f5
 @ref164:

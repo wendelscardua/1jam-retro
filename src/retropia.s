@@ -3497,9 +3497,6 @@ row_loop:
   LDA #game_states::gi_lose
   STA game_state
 
-  LDA #music_track::Gamekid_Defeat
-  JSR FamiToneMusicPlay
-
   LDA #$21
   STA ppu_addr_ptr+1
   LDA #$AB
@@ -3510,6 +3507,10 @@ row_loop:
   LDA #$00
   STA PPUADDR
 
+  LDA #music_track::Gamekid_Defeat
+  JSR FamiToneMusicPlay
+
+  LDA #$00
   STA frame_counter
 
 no_death:
