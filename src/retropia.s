@@ -1880,8 +1880,8 @@ kaboom:
 
   DEX
 @loop:
-  LDA objects+Object::type, X
-  CMP #object_type::breakable_wall
+  LDY objects+Object::type, X
+  CPY #object_type::breakable_wall
   BNE @next
 
   CLC
