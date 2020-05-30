@@ -1790,6 +1790,14 @@ enemy_collision:
   CMP temp_hitbox_b+Box::y2
   BCS @next
 
+  TXA
+  PHA
+  LDA #sfx::Fireball_Collision
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
+  PLA
+  TAX
+
   ; delete fireball and object
   CPX boss_index
   BNE @skip_boss_check
