@@ -1193,6 +1193,9 @@ even_frame:
 .endproc
 
 .proc open_inventory
+  LDA #sfx::Menu_Open
+  LDX #FT_SFX_CH1
+  JSR FamiToneSfxPlay
   LDA #game_states::main_inventory
   STA game_state
   LDA #$1
@@ -1212,6 +1215,9 @@ even_frame:
 .endproc
 
 .proc close_inventory
+  LDA #sfx::Menu_Close
+  LDX #FT_SFX_CH1
+  JSR FamiToneSfxPlay
   LDA #game_states::main_playing
   STA game_state
   LDA #$0
