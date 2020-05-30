@@ -1933,7 +1933,7 @@ kaboom:
   LDA #$00
   STA explosion_progress
 
-  ; check if any breakable wall was caught by explosion
+  ; check if any breakable wal / enemy / player  was caught by explosion
 
   ; first we make an explosion hitbox
   LDA bomb_x
@@ -1961,8 +1961,6 @@ kaboom:
   DEX
 @loop:
   LDY objects+Object::type, X
-  CPY #object_type::breakable_wall
-  BNE @next
 
   CLC
   LDA hitbox_x1, Y
@@ -1990,8 +1988,25 @@ kaboom:
   JSR temp_hitbox_collision
   BEQ @next
 
+  ; check if object should be damaged
+  CPY #object_type::player
+  BNE :+
+  JSR damage_player
+:
+  CPY #object_type::enemy_vrissy
+  BNE :+
   JSR delete_nth_object
-
+:
+  CPY #object_type::breakable_wall
+  BNE :+
+  JSR delete_nth_object
+:
+  CPY #object_type::glitch_boss
+  BNE :+
+  DEC boss_lives
+  BPL :+
+  JSR delete_nth_object
+:
 @next:
   DEX
   BPL @loop
