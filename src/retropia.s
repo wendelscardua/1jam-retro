@@ -1653,6 +1653,10 @@ no_victory:
   BNE :+
   RTS
 :
+  LDA #sfx::Shoot_Fireball
+  LDX #FT_SFX_CH1
+  JSR FamiToneSfxPlay
+
   LDA objects+Object::xcoord
   CLC
   ADC #$08
@@ -3733,6 +3737,9 @@ return:
   CLC
   ADC #$04
   STA gamekid_ram+gi_var::bullet_x
+  LDA #sfx::Shoot_Fireball
+  LDX #FT_SFX_CH1
+  JSR FamiToneSfxPlay
 :
 
   ; update bullet
@@ -4243,6 +4250,9 @@ bomb:
 
   LDA #music_track::Gamekid_Defeat
   JSR FamiToneMusicPlay
+  LDA #sfx::Explosion
+  LDX #FT_SFX_CH1
+  JSR FamiToneSfxPlay
 
   LDA #$00
   STA frame_counter
