@@ -1437,6 +1437,8 @@ next:
   BNE update_elements_loop ; X = 0 is player object
 skip_update_elements:
 
+  ; draw elements
+draw_elements:
   ; maybe update fireball
   LDA fireball_x
   BEQ :+
@@ -1455,8 +1457,6 @@ skip_update_elements:
   JSR update_explosion
 :
 
-  ; draw elements
-draw_elements:
   LDA #0
   STA sprite_counter
   LDX num_objects
@@ -1466,8 +1466,14 @@ draw_elements_loop:
   ; Save X
   TXA
   PHA
-  ; first we get the pointer to anim_data stuff
+
+  ; hide object if in inventory
   LDY objects+Object::type, X
+  LDA inventory_mask_per_type, Y
+  AND inventory
+  BNE skip_drawing
+
+  ; get the pointer to anim_data stuff
   LDA anim_data_ptr_l, Y
   STA addr_ptr
   LDA anim_data_ptr_h, Y
@@ -1529,12 +1535,6 @@ load_sprite:
   LDA game_state
   CMP #game_states::main_playing
   BNE skip_collision
-
-  ; hide object if in inventory
-  LDY objects+Object::type, X
-  LDA inventory_mask_per_type, Y
-  AND inventory
-  BNE skip_drawing
 
   JSR handle_object_player_collision
   ; if collision changed stuff, stop drawing
