@@ -4019,6 +4019,15 @@ wait_for_level:
   STA gamekid_ram+mf_var::player_y
   LDA #$00
   STA gamekid_ram+mf_var::ready
+  STA gamekid_ram+mf_var::opened_cells
+  LDX #$63
+@erase_loop:
+  STA gamekid_ram+mf_var::table,X
+  STA gamekid_ram+mf_var::bomb_table,X
+  STA gamekid_ram+mf_var::status,X
+  DEX
+  BPL @erase_loop
+
 :
   ; use the wait to draw the level bg, row by row (gotta go fast)
   JSR mf_partial_draw_level
