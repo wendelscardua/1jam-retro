@@ -34,6 +34,7 @@ FT_DPCM_OFF= $c000
   Typing_Text
   Read_More
   Select_Cartridge
+  Choose_Cartridge
   Shoot_Fireball
   Fireball_Collision
   Ignited_Bomb
@@ -1262,6 +1263,9 @@ even_frame:
   STA current_nametable
   LDA #$00
   STA frame_counter
+  LDA #sfx::Choose_Cartridge
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
   LDA #music_track::Gamekid_Booting
   JSR FamiToneMusicPlay
 return:
@@ -2154,6 +2158,9 @@ no_buttons:
   LDA pressed_buttons
   AND #(BUTTON_UP | BUTTON_LEFT)
   BEQ :+
+  LDA #sfx::Select_Cartridge
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
   LSR inventory_selection
   BCC :+
   LDA #%1000
@@ -2162,6 +2169,9 @@ no_buttons:
   LDA pressed_buttons
   AND #(BUTTON_DOWN | BUTTON_RIGHT)
   BEQ :+
+  LDA #sfx::Select_Cartridge
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
   ASL inventory_selection
   LDA inventory_selection
   CMP #%10000

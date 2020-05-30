@@ -6,16 +6,17 @@
 - Menu close
 - Cartridge get
 - Select cartridge
+- Choose cartridge
 - Shoot fireball
 - Fireball collision
 - Ignited bomb
 - Explosion
+- Typing text
 
 ## TODO ##
 
 ### Main game ###
 
-- Typing text
 - Read more
 - Pushed block
 - Swimming
