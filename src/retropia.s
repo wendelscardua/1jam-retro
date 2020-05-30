@@ -1768,15 +1768,52 @@ no_victory:
   CMP #$E8
   BCS delete_fireball
 
-  ; TODO - maybe collide with walls (don't care much about it)
+  ; collide with walls
+  JSR fireball_wall_collision
 
   ; collide with enemy
-  JMP enemy_collision
+  JSR fireball_enemy_collision
+  RTS
 delete_fireball:
   LDA #$00
   STA fireball_x
   RTS
-enemy_collision:
+.endproc
+
+.proc fireball_wall_collision
+  LDX num_walls
+  DEX
+loop:
+  LDA wall_watery, X
+  BNE next
+  LDA fireball_x
+  CMP wall_x1, X
+  BCC next
+  LDA fireball_y
+  CMP wall_y1, X
+  BCC next
+  LDA fireball_x
+  CMP wall_x2, X
+  BCS next
+  LDA fireball_y
+  CMP wall_y2, X
+  BCS next
+  JMP delete_fireball
+next:
+  DEX
+  BPL loop
+
+  RTS
+delete_fireball:
+  LDA #sfx::Fireball_Collision
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
+  LDA #$00
+  STA fireball_x
+  RTS
+.endproc
+
+.proc fireball_enemy_collision
   LDX num_objects
   BNE :+
   RTS
@@ -1842,6 +1879,10 @@ enemy_collision:
   DEX
   BPL @loop
 
+  RTS
+delete_fireball:
+  LDA #$00
+  STA fireball_x
   RTS
 .endproc
 
