@@ -3332,6 +3332,8 @@ wait_to_return:
   ; insta scroll to title
   LDA #$01
   STA current_nametable
+  LDA #music_track::Invasion
+  JSR FamiToneMusicPlay
 
 wait_for_level:
   ; TODO: optimize
@@ -3494,6 +3496,9 @@ row_loop:
 
   LDA #game_states::gi_lose
   STA game_state
+
+  LDA #music_track::Gamekid_Defeat
+  JSR FamiToneMusicPlay
 
   LDA #$21
   STA ppu_addr_ptr+1
@@ -3850,7 +3855,8 @@ skip_draw_loop:
   STA frame_counter
   LDA #game_states::gi_win
   STA game_state
-
+  LDA #music_track::Gamekid_Victory
+  JSR FamiToneMusicPlay
 :
   RTS
 .endproc

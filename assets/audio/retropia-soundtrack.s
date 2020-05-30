@@ -27,10 +27,10 @@ retropia_soundtrack_music_data:
 	.word @env2, @env0, @env0
 	.byte $00
 	.byte $b0 ;instrument 03 (GKFanfare)
-	.word @env4, @env0, @env0
+	.word @env5, @env0, @env0
 	.byte $00
 	.byte $b0 ;instrument 04 (GKLead)
-	.word @env5, @env0, @env0
+	.word @env4, @env0, @env0
 	.byte $00
 	.byte $f0 ;instrument 05 (Lead)
 	.word @env16, @env0, @env0
@@ -70,9 +70,9 @@ retropia_soundtrack_music_data:
 @env3:
 	.byte $cf,$cd,$ca,$c0,$00,$03
 @env4:
-	.byte $c2,$c4,$c7,$c8,$ca,$cd,$c9,$c7,$00,$07
-@env5:
 	.byte $c5,$c8,$ca,$c7,$c4,$c0,$00,$05
+@env5:
+	.byte $c1,$c3,$c5,$c6,$c7,$c8,$c7,$c5,$00,$07
 @env6:
 	.byte $cf,$02,$c0,$00,$02
 @env7:
@@ -456,31 +456,31 @@ retropia_soundtrack_music_data:
 
 @song4ch0:
 	.byte $fb, $01
-@song4ch0loop:
 @ref90:
-	.byte $f9,$f5
+	.byte $86,$3a,$cd,$42,$cd,$3e,$cb,$00
+@song4ch0loop:
 @ref91:
-	.byte $f9,$f5
+	.byte $86,$42,$91,$44,$91,$40,$91,$40,$91,$46,$91,$46,$91,$4a,$91,$4a,$91,$40,$91,$3c,$91,$3c,$a5
 @ref92:
-	.byte $f9,$f5
+	.byte $3c,$91,$3e,$91,$3a,$91,$3a,$91,$42,$91,$42,$91,$46,$91,$46,$91,$40,$91,$4a,$91,$4a,$a5
 	.byte $fd
 	.word @song4ch0loop
 
 @song4ch1:
-@song4ch1loop:
 @ref93:
-	.byte $f9,$f5
+	.byte $82,$32,$cd,$2c,$cd,$32,$a5,$2e,$a3,$00
+@song4ch1loop:
 @ref94:
-	.byte $f9,$f5
+	.byte $82,$30,$a5,$32,$a5,$2e,$a5,$32,$a5,$2c,$a5,$2e,$a5
 @ref95:
-	.byte $f9,$f5
+	.byte $30,$a5,$32,$a5,$2e,$a5,$32,$a5,$2c,$a5,$2e,$a5
 	.byte $fd
 	.word @song4ch1loop
 
 @song4ch2:
-@song4ch2loop:
 @ref96:
 	.byte $f9,$f5
+@song4ch2loop:
 @ref97:
 	.byte $f9,$f5
 @ref98:
@@ -489,9 +489,9 @@ retropia_soundtrack_music_data:
 	.word @song4ch2loop
 
 @song4ch3:
-@song4ch3loop:
 @ref99:
 	.byte $f9,$f5
+@song4ch3loop:
 @ref100:
 	.byte $f9,$f5
 @ref101:
@@ -500,9 +500,9 @@ retropia_soundtrack_music_data:
 	.word @song4ch3loop
 
 @song4ch4:
-@song4ch4loop:
 @ref102:
 	.byte $f9,$f5
+@song4ch4loop:
 @ref103:
 	.byte $f9,$f5
 @ref104:
