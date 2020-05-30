@@ -5608,7 +5608,7 @@ string_dialog_explain_gi: .byte "I_SEE_YOU_FOUND", $0A
                           .byte "A_SPACESHIP_THAT_CAN", $0A
                           .byte "SHOOT_AT_ENEMY_SHIPS", $0A
                           .byte $0A
-                          .byte "JUST_PRESS_A_TO_FIRE", $0A
+                          .byte "PRESS_A_TO_FIRE", $0A
                           .byte $0A
                           .byte "BE_CAREFUL_AS_THE", $0A
                           .byte "ENEMIES_GET_FASTER", $0A
