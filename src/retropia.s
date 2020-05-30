@@ -3924,6 +3924,8 @@ return:
   ; insta scroll to title
   LDA #$01
   STA current_nametable
+  LDA #music_track::Sweeping_Mines
+  JSR FamiToneMusicPlay
 
 wait_for_level:
   ; TODO: optimize
@@ -4186,6 +4188,11 @@ bomb:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
+
+  LDA #music_track::Gamekid_Defeat
+  JSR FamiToneMusicPlay
+
+  LDA #$00
   STA frame_counter
   RTS
 safe:
@@ -4399,6 +4406,8 @@ draw_tile:
   STA frame_counter
   LDA #game_states::mf_win
   STA game_state
+  LDA #music_track::Gamekid_Victory
+  JSR FamiToneMusicPlay
 :
 
 
@@ -4493,6 +4502,8 @@ return:
   ; insta scroll to title
   LDA #$01
   STA current_nametable
+  LDA #music_track::Log_a_rhythm
+  JSR FamiToneMusicPlay
 
 wait_for_level:
   ; TODO: optimize
@@ -4688,6 +4699,11 @@ next:
   STA PPUADDR
   LDA #$00
   STA PPUADDR
+
+  LDA #music_track::Gamekid_Defeat
+  JSR FamiToneMusicPlay
+
+  LDA #$00
   STA frame_counter
 return:
   RTS
@@ -4821,6 +4837,8 @@ no_new_barrier:
   STA frame_counter
   LDA #game_states::rr_win
   STA game_state
+  LDA #music_track::Gamekid_Victory
+  JSR FamiToneMusicPlay
 :
 
   LDX #(RR_MAX_BARRIERS-1)

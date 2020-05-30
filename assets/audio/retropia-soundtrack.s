@@ -512,31 +512,31 @@ retropia_soundtrack_music_data:
 
 @song5ch0:
 	.byte $fb, $01
-@song5ch0loop:
 @ref105:
-	.byte $f9,$f5
+	.byte $88,$44,$a5,$48,$91,$4a,$91,$44,$a5,$40,$a5,$3c,$91,$3e,$91,$44,$a5
+@song5ch0loop:
 @ref106:
-	.byte $f9,$f5
+	.byte $88,$4a,$91,$48,$91,$4e,$91,$50,$91,$4a,$a5,$46,$a5,$42,$91,$44,$91,$4a,$a5
 @ref107:
-	.byte $f9,$f5
+	.byte $44,$91,$48,$91,$4e,$91,$4a,$91,$44,$a5,$48,$a5,$40,$91,$48,$91,$44,$a5
 	.byte $fd
 	.word @song5ch0loop
 
 @song5ch1:
-@song5ch1loop:
 @ref108:
 	.byte $f9,$f5
+@song5ch1loop:
 @ref109:
-	.byte $f9,$f5
+	.byte $84,$3c,$a5,$42,$a7,$3c,$cb,$36,$a5,$3c,$a5
 @ref110:
-	.byte $f9,$f5
+	.byte $38,$a5,$40,$a5,$38,$a7,$3a,$a3,$32,$a5,$38,$a5
 	.byte $fd
 	.word @song5ch1loop
 
 @song5ch2:
-@song5ch2loop:
 @ref111:
 	.byte $f9,$f5
+@song5ch2loop:
 @ref112:
 	.byte $f9,$f5
 @ref113:
@@ -545,9 +545,9 @@ retropia_soundtrack_music_data:
 	.word @song5ch2loop
 
 @song5ch3:
-@song5ch3loop:
 @ref114:
 	.byte $f9,$f5
+@song5ch3loop:
 @ref115:
 	.byte $f9,$f5
 @ref116:
@@ -556,9 +556,9 @@ retropia_soundtrack_music_data:
 	.word @song5ch3loop
 
 @song5ch4:
-@song5ch4loop:
 @ref117:
 	.byte $f9,$f5
+@song5ch4loop:
 @ref118:
 	.byte $f9,$f5
 @ref119:
@@ -568,31 +568,31 @@ retropia_soundtrack_music_data:
 
 @song6ch0:
 	.byte $fb, $01
-@song6ch0loop:
 @ref120:
-	.byte $f9,$f5
+	.byte $88,$3c,$91,$40,$91,$44,$91,$40,$91,$3c,$91,$40,$91,$44,$a5,$3c,$a5,$3c,$a5
+@song6ch0loop:
 @ref121:
-	.byte $f9,$f5
+	.byte $86,$3c,$a5,$44,$91,$3c,$91,$4a,$a5,$3c,$91,$44,$91,$54,$a5,$44,$a5
 @ref122:
-	.byte $f9,$f5
+	.byte $3c,$a5,$44,$91,$4a,$91,$3c,$a5,$4a,$91,$54,$91,$3c,$a5,$44,$a3,$00
 	.byte $fd
 	.word @song6ch0loop
 
 @song6ch1:
-@song6ch1loop:
 @ref123:
 	.byte $f9,$f5
+@song6ch1loop:
 @ref124:
-	.byte $f9,$f5
+	.byte $82,$32,$a5,$3a,$a5,$32,$a5,$3a,$a5,$32,$a5,$32,$a5
 @ref125:
-	.byte $f9,$f5
+	.byte $32,$a5,$36,$a5,$36,$a5,$32,$a5,$40,$a5,$36,$a5
 	.byte $fd
 	.word @song6ch1loop
 
 @song6ch2:
-@song6ch2loop:
 @ref126:
 	.byte $f9,$f5
+@song6ch2loop:
 @ref127:
 	.byte $f9,$f5
 @ref128:
@@ -601,9 +601,9 @@ retropia_soundtrack_music_data:
 	.word @song6ch2loop
 
 @song6ch3:
-@song6ch3loop:
 @ref129:
 	.byte $f9,$f5
+@song6ch3loop:
 @ref130:
 	.byte $f9,$f5
 @ref131:
@@ -612,9 +612,9 @@ retropia_soundtrack_music_data:
 	.word @song6ch3loop
 
 @song6ch4:
-@song6ch4loop:
 @ref132:
 	.byte $f9,$f5
+@song6ch4loop:
 @ref133:
 	.byte $f9,$f5
 @ref134:
