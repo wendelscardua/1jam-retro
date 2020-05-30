@@ -2712,6 +2712,15 @@ return:
   BNE moving
   RTS
 moving:
+  LDA nmis
+  AND #%111
+  BNE :+
+  save_regs
+  LDA #sfx::Pushed_Block
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
+  restore_regs
+:
   LDA objects+Object::direction, X
   CMP #direction::up
   BEQ move_up

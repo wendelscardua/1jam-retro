@@ -15,9 +15,4 @@
 - Typing text
 - Damage
 - Swimming
-
-## TODO ##
-
-### Main game ###
-
 - Pushed block
