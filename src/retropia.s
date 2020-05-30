@@ -27,7 +27,21 @@ FT_DPCM_OFF= $c000
   Free_Faerie
 .endenum
 
-; SFX_SOME_SFX = 0
+.enum sfx
+  Menu_Open
+  Menu_Close
+  Cartridge_Get
+  Typing_Text
+  Read_More
+  Select_Cartridge
+  Shoot_Fireball
+  Fireball_Collision
+  Ignited_Bomb
+  Explosion
+  Pushed_Block
+  Swimming
+  Damage
+.endenum
 
 ; debug - macros for NintendulatorDX interaction
 .ifdef DEBUG
@@ -338,7 +352,7 @@ RR_FLAG_DELAY=180
 .import unrle
 
 .import music_data
-; .import sfx_data
+.import sfx_data
 
 .macro KIL ; pseudo instruction to kill the program
   .byte $12
@@ -464,10 +478,10 @@ clear_ram:
   LDA #1
   JSR FamiToneInit
 
-  ; LDX #<some_sfx_data
-  ; LDY #>some_sfx_data
-  ; LDA #1
-  ; JSR FamiToneSfxInit
+  LDX #<sfx_data
+  LDY #>sfx_data
+  LDA #1
+  JSR FamiToneSfxInit
 
   ; TODO: change to title screen when available
   JSR title_setup
@@ -5918,10 +5932,6 @@ subgame_nametables_h:
         .byte >nametable_gi_title
         .byte >nametable_mf_title
         .byte >nametable_rr_title
-
-; music and sfx data
-;.include "../assets/music/some-music.s"
-;.include "../assets/music/some-sfx.s"
 
 .segment "CHR"
 .incbin "../assets/graphics.chr"
