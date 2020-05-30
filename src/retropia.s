@@ -2309,6 +2309,8 @@ stop_blinking:
   JSR load_screen
   RTS
 game_over:
+  LDA #music_track::Gamekid_Defeat
+  JSR FamiToneMusicPlay
   DIALOG string_dialog_game_over, title_setup
   RTS
 .endproc
