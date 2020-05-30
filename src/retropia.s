@@ -1827,7 +1827,9 @@ enemy_collision:
   LDA bomb_countdown
   BEQ kaboom
   DEC bomb_countdown
-  ; TODO - maybe SFX
+  LDA #sfx::Ignited_Bomb
+  LDX #FT_SFX_CH3
+  JSR FamiToneSfxPlay
   RTS
 kaboom:
   LDA #sfx::Explosion
