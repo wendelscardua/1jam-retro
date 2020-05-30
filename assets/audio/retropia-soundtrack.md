@@ -8,7 +8,7 @@ Tracks
 04. Invasion - Galaxy Intruders title/theme (TODO)
 05. Sweeping Mines - Mine Finder title/theme (TODO)
 06. Log-a-rhythm - River Ray title/theme (TODO)
-07. Gamekid Victory (TODO)
+07. Gamekid Victory
 08. Gamekid Defeat (TODO)
 09. Glitching - Boss theme (TODO)
 10. Free Faerie - Victory (TODO)
