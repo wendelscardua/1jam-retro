@@ -4542,6 +4542,7 @@ draw_cursor:
 .proc mf_win
   LDA frame_counter
   BNE wait_to_return
+  VBLANK
   LDA #$20
   STA ppu_addr_ptr+1
   LDA #$CC
