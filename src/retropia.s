@@ -5823,23 +5823,46 @@ screen_9_data:
         .byte $00
 
         .byte object_type::enemy_vrissy, $18, $A0, direction::up
-        .word screen_9_vrissies_code
+        .word screen_9_vrissy_code_a
         .byte $00
 
-        .byte object_type::enemy_vrissy, $28, $20, direction::down
-        .word screen_9_vrissies_code
-        .byte $04
+        .byte object_type::enemy_vrissy, $28, $90, direction::up
+        .word screen_9_vrissy_code_b
+        .byte $00
 
         .byte $00 ; end of objects
 
 screen_9_block_code:
         .byte $60, $A0
 
-screen_9_vrissies_code:
+; 18 1D 22 28
+screen_9_vrissy_code_a:
+        .byte $20, direction::right
+        .byte $1D, direction::down
+        .byte $A0, direction::right
+        .byte $22, direction::up
         .byte $20, direction::right
         .byte $28, direction::down
         .byte $A0, direction::left
+        .byte $22, direction::up
+        .byte $20, direction::left
+        .byte $1D, direction::down
+        .byte $A0, direction::left
         .byte $18, direction::up
+        .byte $00
+screen_9_vrissy_code_b:
+        .byte $20, direction::left
+        .byte $22, direction::down
+        .byte $A0, direction::left
+        .byte $1D, direction::up
+        .byte $20, direction::left
+        .byte $18, direction::down
+        .byte $A0, direction::right
+        .byte $1D, direction::up
+        .byte $20, direction::right
+        .byte $22, direction::down
+        .byte $A0, direction::right
+        .byte $28, direction::up
         .byte $00
 
 screen_A_data:
