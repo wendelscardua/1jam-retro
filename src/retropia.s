@@ -2828,21 +2828,45 @@ stop_right:
   PLA
   CMP #game_states::wk_win
   BNE :+
+  LDA inventory
+  AND #FINISHED_WK
+  BNE :+
+  LDA inventory
+  ORA #FINISHED_WK
+  STA inventory
   DIALOG string_dialog_wk_win
   RTS
 :
   CMP #game_states::gi_win
   BNE :+
+  LDA inventory
+  AND #FINISHED_GI
+  BNE :+
+  LDA inventory
+  ORA #FINISHED_GI
+  STA inventory
   DIALOG string_dialog_gi_win
   RTS
 :
   CMP #game_states::mf_win
   BNE :+
+  LDA inventory
+  AND #FINISHED_MF
+  BNE :+
+  LDA inventory
+  ORA #FINISHED_MF
+  STA inventory
   DIALOG string_dialog_mf_win
   RTS
 :
   CMP #game_states::rr_win
   BNE :+
+  LDA inventory
+  AND #FINISHED_RR
+  BNE :+
+  LDA inventory
+  ORA #FINISHED_RR
+  STA inventory
   DIALOG string_dialog_rr_win
 :
   RTS
@@ -3334,9 +3358,6 @@ after_drawing:
   STA game_state
   JMP return
 win:
-  LDA inventory
-  ORA #FINISHED_WK
-  STA inventory
   LDA #game_states::wk_win
   STA game_state
   LDA #music_track::Gamekid_Victory
@@ -3924,9 +3945,6 @@ skip_draw_loop:
   ADC gamekid_ram+gi_var::total_enemies
   BNE :+
 
-  LDA inventory
-  ORA #FINISHED_GI
-  STA inventory
   LDA #$00
   STA frame_counter
   LDA #game_states::gi_win
@@ -4488,9 +4506,6 @@ draw_tile:
   LDA gamekid_ram+mf_var::opened_cells
   CMP #(.sizeof(mf_var::table) - MF_BOMBS)
   BNE :+
-  LDA inventory
-  ORA #FINISHED_MF
-  STA inventory
   LDA #$00
   STA frame_counter
   LDA #game_states::mf_win
@@ -4920,9 +4935,6 @@ no_new_barrier:
   .endrepeat
   BNE :+
   ; flag is gone, game over, you win!
-  LDA inventory
-  ORA #FINISHED_RR
-  STA inventory
   LDA #$00
   STA frame_counter
   LDA #game_states::rr_win
