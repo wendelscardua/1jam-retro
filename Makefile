@@ -1,6 +1,8 @@
 PROJECT=retropia
 LD65_FLAGS=
 CA65_FLAGS=
+NSF2DATA=/mnt/c/NESDev/famitone2d/NSF/nsf2data.exe
+FAMITRACKER=/mnt/c/NESDev/famitracker/FamiTracker.exe
 
 .PHONY : debug run
 
@@ -16,6 +18,12 @@ src/${PROJECT}.o: src/${PROJECT}.s $(shell find assets -type f)
 
 src/audio-data.o: src/audio-data.s assets/audio/*.s
 	ca65 src/audio-data.s ${CA65_FLAGS}
+
+assets/audio/retropia-sfx.nsf: assets/audio/retropia-sfx.ftm
+	${FAMITRACKER} assets/audio/retropia-sfx.ftm -export assets/audio/retropia-sfx.nsf
+
+assets/audio/retropia-sfx.s: assets/audio/retropia-sfx.nsf
+	${NSF2DATA} assets/audio/retropia-sfx.nsf -ca65 -ntsc
 
 %.o: %.s
 	ca65 $< ${CA65_FLAGS}
