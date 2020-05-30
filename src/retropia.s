@@ -2118,6 +2118,9 @@ erasing_rows:
 continue_dialog:
   LDA #$81
   STA dialog_current_row
+  LDA #sfx::Read_More
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
   RTS
 no_buttons:
   LDA #$00
