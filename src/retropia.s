@@ -1830,6 +1830,9 @@ enemy_collision:
   ; TODO - maybe SFX
   RTS
 kaboom:
+  LDA #sfx::Explosion
+  LDX #FT_SFX_CH0
+  JSR FamiToneSfxPlay
   ; check if any breakable wall was caught by explosion
 
   ; first we make an explosion hitbox
