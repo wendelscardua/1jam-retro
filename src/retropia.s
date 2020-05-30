@@ -2350,30 +2350,6 @@ collided:
 @enemy:
   JSR damage_player
   RTS
-@cartridge_wk:
-  LDA inventory
-  ORA #HAS_WK
-  STA inventory
-  DIALOG string_dialog_wk_cartridge
-  RTS
-@cartridge_gi:
-  LDA inventory
-  ORA #HAS_GI
-  STA inventory
-  DIALOG string_dialog_gi_cartridge
-  RTS
-@cartridge_mf:
-  LDA inventory
-  ORA #HAS_MF
-  STA inventory
-  DIALOG string_dialog_mf_cartridge
-  RTS
-@cartridge_rr:
-  LDA inventory
-  ORA #HAS_RR
-  STA inventory
-  DIALOG string_dialog_rr_cartridge
-  RTS
 @pushable_block:
   JSR push_block
   RTS
@@ -2385,6 +2361,35 @@ collided:
   RTS
 @exposition:
   JSR faerie_exposition
+  RTS
+@cartridge_wk:
+  LDA inventory
+  ORA #HAS_WK
+  STA inventory
+  DIALOG string_dialog_wk_cartridge
+  JMP @cartridge_sfx
+@cartridge_gi:
+  LDA inventory
+  ORA #HAS_GI
+  STA inventory
+  DIALOG string_dialog_gi_cartridge
+  JMP @cartridge_sfx
+@cartridge_mf:
+  LDA inventory
+  ORA #HAS_MF
+  STA inventory
+  DIALOG string_dialog_mf_cartridge
+  JMP @cartridge_sfx
+@cartridge_rr:
+  LDA inventory
+  ORA #HAS_RR
+  STA inventory
+  DIALOG string_dialog_rr_cartridge
+  JMP @cartridge_sfx
+@cartridge_sfx:
+  LDA #sfx::Cartridge_Get
+  LDX #FT_SFX_CH2
+  JSR FamiToneSfxPlay
   RTS
 .endproc
 
