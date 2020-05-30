@@ -258,6 +258,9 @@ fireball_direction: .res 1
 bomb_x: .res 1
 bomb_y: .res 1
 bomb_countdown: .res 1
+explosion_x: .res 1
+explosion_y: .res 1
+explosion_progress: .res 1
 swimming: .res 1
 boss_index: .res 1
 boss_horizontal: .res 1
@@ -604,6 +607,9 @@ etc:
   STA bomb_x
   STA bomb_y
   STA bomb_countdown
+  STA explosion_x
+  STA explosion_y
+  STA explosion_progress
 
   ; loads current screen for main game
   LDX current_screen
@@ -1443,6 +1449,12 @@ skip_update_elements:
   JSR update_bomb
 :
 
+  ; maybe update explosion
+  LDA explosion_x
+  BEQ :+
+  JSR update_explosion
+:
+
   ; draw elements
 draw_elements:
   LDA #0
@@ -1559,6 +1571,12 @@ skip_drawing:
   LDA bomb_x
   BEQ :+
   JSR draw_bomb
+:
+
+  ; maybe draw explosion
+  LDA explosion_x
+  BEQ :+
+  JSR draw_explosion
 :
 
   ; display lives
@@ -1866,6 +1884,14 @@ kaboom:
   LDA #sfx::Explosion
   LDX #FT_SFX_CH0
   JSR FamiToneSfxPlay
+  ; prepare to draw explosion
+  LDA bomb_x
+  STA explosion_x
+  LDA bomb_y
+  STA explosion_y
+  LDA #$00
+  STA explosion_progress
+
   ; check if any breakable wall was caught by explosion
 
   ; first we make an explosion hitbox
@@ -1936,6 +1962,17 @@ return:
   RTS
 .endproc
 
+.proc update_explosion
+  INC explosion_progress
+  LDA explosion_progress
+  CMP #%1011
+  BCC :+
+  LDA #$00
+  STA explosion_x
+:
+  RTS
+.endproc
+
 .proc draw_fireball
   ; LDA fireball_x ; XXX done by caller
   STA temp_x
@@ -1965,6 +2002,24 @@ return:
   LDA #<bomb_sprite
   STA addr_ptr
   LDA #>bomb_sprite
+  STA addr_ptr+1
+
+  JSR display_metasprite
+  RTS
+.endproc
+
+.proc draw_explosion
+  ; LDA explosion_x ; XXX done by caller
+  STA temp_x
+  LDA explosion_y
+  STA temp_y
+  LDA explosion_progress
+  LSR
+  LSR
+  TAX
+  LDA explosion_sprites_l, X
+  STA addr_ptr
+  LDA explosion_sprites_h, X
   STA addr_ptr+1
 
   JSR display_metasprite
@@ -5333,6 +5388,14 @@ fireball_sprites_l:
         .byte <fireball_sprite_1, <fireball_sprite_2, <fireball_sprite_3, <fireball_sprite_4
 fireball_sprites_h:
         .byte >fireball_sprite_1, >fireball_sprite_2, >fireball_sprite_3, >fireball_sprite_4
+
+explosion_sprite_1 = metasprite_55_data
+explosion_sprite_2 = metasprite_56_data
+explosion_sprite_3 = metasprite_57_data
+explosion_sprites_l:
+        .byte <explosion_sprite_1, <explosion_sprite_2, <explosion_sprite_3
+explosion_sprites_h:
+        .byte >explosion_sprite_1, >explosion_sprite_2, >explosion_sprite_3
 
 ; indexed by object type
 anim_data_ptr_l:
