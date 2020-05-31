@@ -3,15 +3,22 @@ LD65_FLAGS=
 CA65_FLAGS=
 NSF2DATA=/mnt/c/NESDev/famitone2d/NSF/nsf2data.exe
 FAMITRACKER=/mnt/c/NESDev/famitracker/FamiTracker.exe
+TARGET=${PROJECT}.nes
 
-.PHONY : debug run
+.PHONY : debug run ptbr
 
-${PROJECT}.nes: src/${PROJECT}.o src/reset.o src/readjoy.o src/rand.o src/unrle.o src/audio-data.o
-	ld65 $^ -t nes -o ${PROJECT}.nes ${LD65_FLAGS}
+default: ${TARGET}
+
+ptbr: CA65_FLAGS += -DPTBR=1
+ptbr: TARGET = ${PROJECT}-ptbr.nes
+ptbr: ${TARGET}
+
+${TARGET}: src/${PROJECT}.o src/reset.o src/readjoy.o src/rand.o src/unrle.o src/audio-data.o
+	ld65 $^ -t nes -o ${TARGET} ${LD65_FLAGS}
 
 debug: LD65_FLAGS += -Ln labels.txt --dbgfile ${PROJECT}.nes.dbg
 debug: CA65_FLAGS += -g -DDEBUG=1
-debug: ${PROJECT}.nes
+debug: ${TARGET}
 
 src/${PROJECT}.o: src/${PROJECT}.s $(shell find assets -type f)
 	ca65 src/${PROJECT}.s ${CA65_FLAGS}

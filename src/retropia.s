@@ -5555,6 +5555,175 @@ window_ppu_palette_ptr_l:
         .byte $E9, $EA, $EB, $EC, $ED, $EE
         .byte $F1, $F2, $F3, $F4, $F5, $F6
 strings:
+.ifdef PTBR
+string_game_over: .byte "_DERROTA_", $00
+string_lives: .byte "VIDAS_", WRITE_X_SYMBOL, $00
+string_you_win: .byte "VITORIA", $00
+string_dialog_main_explanation: .byte "OI",$0A
+                                .byte "VEJO_QUE_TENS_UM", $0A
+                                .byte "NOTENDO_GAMEKID", $0A
+                                .byte $0A, $0A, $0A, $0A
+                                .byte "A_PROFECIA_DIZ_QUE", $0A
+                                .byte "TU_NOS_SALVARA_DO", $0A
+                                .byte "MONSTRO_CHAMADO", $0A
+                                .byte "GLITCH", $0A
+                                .byte $0A, $0A, $0A
+                                .byte "PARA_ISSO_DEVES_ACHAR", $0A
+                                .byte "OS_QUATRO_CARTUCHOS", $0A
+                                .byte "LENDARIOS", $0A
+                                .byte $0A, $0A, $0A, $0A
+                                .byte "JOGUE_CADA_UM_DELES", $0A
+                                .byte "EM_TEU_GAMEKID_PARA", $0A
+                                .byte "GANHAR_PODERES", $0A
+                                .byte $0A, $0A, $0A, $0A
+                                .byte "SE_ENCONTRARES_ALGUM", $0A
+                                .byte "DESTES_CARTUCHOS_PODE", $0A
+                                .byte "FALAR_COM_UMA_FADA", $0A
+                                .byte "COMO_EU_PARA_QUE", $0A
+                                .byte "EXPLIQUEMOS_A_TI", $0A
+                                .byte "COMO_JOGAR", $0A
+                                .byte $0A
+                                .byte "APERTAR_SELECT_ABRE", $0A
+                                .byte "O_INVENTORIO_ONDE", $0A
+                                .byte "PODES_VER_E_JOGAR", $0A
+                                .byte "TODOS_OS_JOGOS_QUE", $0A
+                                .byte "TIVERES_ENCONTRADO"
+                                .byte $00
+string_dialog_explain_wk: .byte "ENCONTRASTES", $0A
+                          .byte "WORKHOUSE_KEEPER", $0A
+                          .byte $0A
+                          .byte "NESTE_JOGO_DEVES", $0A
+                          .byte "EMPURRAR_BLOCOS_PARA", $0A
+                          .byte "LUGARES_MARCADOS", $0A
+                          .byte $0A
+                          .byte "CASO_COMETAS_UM_ERRO", $0A
+                          .byte "BASTA_APERTAR_B_PARA", $0A
+                          .byte "REINICIAR_A_FASE", $0A
+                          .byte $0A
+                          .byte "BOA_SORTE", $0A
+                          .byte $00
+string_dialog_explain_gi: .byte "VEJO_QUE_ACHASTES", $0A
+                          .byte "GALAXY_INTRUDERS", $0A
+                          .byte $0A
+                          .byte "NESTE_JOGO_TU_ES_UMA", $0A
+                          .byte "NAVE_ESPACIAL_QUE", $0A
+                          .byte "ATIRA_NOS_INIMIGOS", $0A
+                          .byte $0A
+                          .byte "APERTE_A_PARA_ATIRAR", $0A
+                          .byte $0A
+                          .byte "CUIDADO_POIS_NAVES", $0A
+                          .byte "INIMIGAS_FICAM_MAIS", $0A
+                          .byte "RAPIDAS_NA_SEGUNDA", $0A
+                          .byte "METADE_DO_JOGO", $0A
+                          .byte $0A
+                          .byte "BOA_SORTE"
+                          .byte $00
+string_dialog_explain_mf: .byte "ACHASTES_MINE_FINDER", $0A
+                          .byte $0A
+                          .byte "NESTE_JOGO_DEVES", $0A
+                          .byte "DEDUZIR_EM_QUE_CASAS", $0A
+                          .byte "HA_OU_NAO_BOMBAS", $0A
+                          .byte "ESCONDIDAS", $0A
+                          .byte $0A
+                          .byte "APERTE_A_PARA_ABRIR", $0A
+                          .byte "APERTE_B_PARA_MARCAR", $0A
+                          .byte "VENCES_ABRINDO_TODAS", $0A
+                          .byte "AS_CASAS_SEM_BOMBA", $0A
+                          .byte $0A, $0A, $0A
+                          .byte "CASAS_SEM_BOMBA_SAO", $0A
+                          .byte "VAZIAS_SE_NAO_HA", $0A
+                          .byte "BOMBAS_AO_SEU_REDOR", $0A
+                          .byte "OU_CONTEM_O_NUMERO", $0A
+                          .byte "DE_BOMBAS_NAS_CASAS", $0A
+                          .byte "AO_SEU_REDOR", $0A
+                          .byte $0A
+                          .byte "BOA_SORTE"
+                          .byte $00
+string_dialog_explain_rr: .byte "ACHASTES_RIVER_RAY", $0A
+                          .byte $0A
+                          .byte "NESTE_AQUI_TU_ES_UMA", $0A
+                          .byte "ARRAIA_QUE_DEVE", $0A
+                          .byte "DESVIAR_DE_TORAS", $0A
+                          .byte "ESPINHENTAS", $0A
+                          .byte $0A
+                          .byte "AS_TORAS_ACELERAM", $0A
+                          .byte "CONFORME_A_LINHA_DE", $0A
+                          .byte "CHEGADA_SE_APROXIMA", $0A
+                          .byte $0A
+                          .byte "BOA_SORTE"
+                          .byte $00
+string_dialog_explain_quest: .byte "VALENTE_HEROI", $0A
+                             .byte "AGORA_QUE_POSSUIS", $0A
+                             .byte "OS_PODERES_DOS", $0A
+                             .byte "CARTUCHOS_LENDARIOS", $0A
+                             .byte "PODES_CONFRONTAR_O", $0A
+                             .byte "GLITCH", $0A
+                             .byte $0A
+                             .byte "O_GLITCH_ESTA_NA", $0A
+                             .byte "SALA_DOURADA_AO", $0A
+                             .byte "NORTE_DE_NOSSO_REINO", $0A
+                             .byte $0A
+                             .byte "LA_FICA_O_TRONO_DOS", $0A
+                             .byte "JOGOS"
+                             .byte $00
+string_dialog_wk_cartridge: .byte "OBTEVE_UM_NOVO", $0A
+                            .byte "CARTUCHO_LENDARIO:", $0A
+                            .byte $0A
+                            .byte "WORKHOUSE_KEEPER", $00
+string_dialog_gi_cartridge: .byte "OBTEVE_UM_NOVO", $0A
+                            .byte "CARTUCHO_LENDARIO:", $0A
+                            .byte $0A
+                            .byte "GALAXY_INTRUDERS", $00
+string_dialog_mf_cartridge: .byte "OBTEVE_UM_NOVO", $0A
+                            .byte "CARTUCHO_LENDARIO:", $0A
+                            .byte $0A
+                            .byte "MINE_FINDER", $00
+string_dialog_rr_cartridge: .byte "OBTEVE_UM_NOVO", $0A
+                            .byte "CARTUCHO_LENDARIO:", $0A
+                            .byte $0A
+                            .byte "RIVER_RAY", $00
+string_dialog_game_over: .byte "O_HEROI_DOS_JOGOS", $0A
+                         .byte "FOI_DERROTADO", $0A
+                         .byte $0A
+                         .byte "NOSSA_ESPERANCA", $0A
+                         .byte "SE_FOI", $00
+string_dialog_victory: .byte "O_HEROI_DOS_JOGOS", $0A
+                       .byte "VENCEU_O_GLITCH", $0A
+                       .byte $0A
+                       .byte "O_REINO_DE_RETROPIA", $0A
+                       .byte "ESTA_LIVRE_NOVAMENTE", $0A
+                       .byte $0A
+                       .byte $0A
+                       .byte $0A
+                       .byte $0A
+                       .byte "______FIM", $0A
+                       .byte $00
+string_dialog_wk_win: .byte "OBTEVE_UM_NOVO_PODER:", $0A
+                      .byte $0A
+                      .byte "EMPURRAR_BLOCOS", $0A
+                      .byte $0A
+                      .byte "AGORA_BLOCOS_PESADOS", $0A
+                      .byte "PODEM_SER_EMPURRADOS", $0A
+                      .byte $00
+string_dialog_gi_win: .byte "OBTEVE_UM_NOVO_PODER:", $0A
+                      .byte $0A
+                      .byte "BOLA_DE_FOGO", $0A
+                      .byte $0A
+                      .byte "APERTE_A_PARA_ATIRAR", $00
+string_dialog_mf_win: .byte "OBTEVE_UM_NOVO_PODER:", $0A
+                      .byte $0A
+                      .byte "CRIAR_BOMBAS", $0A
+                      .byte $0A
+                      .byte "APERTE_B_PARA_CRIAR", $0A
+                      .byte $00
+string_dialog_rr_win: .byte "OBTEVE_UM_NOVO_PODER:", $0A
+                      .byte $0A
+                      .byte "NADAR", $0A
+                      .byte $0A
+                      .byte "ATRAVESSE_A_AGUA", $0A
+                      .byte "PARA_SAIR_NADANDO", $0A
+                      .byte $00
+.else
 string_game_over: .byte "GAME_OVER", $00
 string_lives: .byte "LIVES_", WRITE_X_SYMBOL, $00
 string_you_win: .byte "YOU_WIN", $00
@@ -5721,6 +5890,7 @@ string_dialog_rr_win: .byte "YOU_GOT_A_NEW_POWER:", $0A
                       .byte "WALK_INTO_WATER_TO", $0A
                       .byte "SWIM_AROUND", $0A
                       .byte $00
+.endif
 screens_l:
         .byte $00 ; padding
         .byte <screen_1_data
@@ -6144,7 +6314,11 @@ rr_barrier_transitions:
         .byte %00001 ; from 11110
         .byte %00000 ; from 11111 (victory flag)
 
+.ifdef PTBR
+nametable_title: .incbin "../assets/nametables/title-ptbr.rle"
+.else
 nametable_title: .incbin "../assets/nametables/title.rle"
+.endif
 
 nametable_screen_2: .incbin "../assets/nametables/screens/screen-2.rle"
 nametable_screen_4: .incbin "../assets/nametables/screens/screen-4.rle"
