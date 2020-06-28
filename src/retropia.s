@@ -369,6 +369,14 @@ vblankwait:
   BPL vblankwait
 .endmacro
 
+.macro NC_VBLANK
+  .local vblankwait
+vblankwait:
+  LDA nmis
+  CMP old_nmis
+  BEQ vblankwait
+.endmacro
+
 .macro save_regs
   PHA
   TXA
@@ -4559,7 +4567,7 @@ draw_tile:
   INC ppu_addr_ptr+1
 :
 
-  VBLANK
+  NC_VBLANK
 
   LDA ppu_addr_ptr+1
   STA PPUADDR
@@ -4708,7 +4716,7 @@ draw_cursor:
 .proc mf_win
   LDA frame_counter
   BNE wait_to_return
-  VBLANK
+  NC_VBLANK
   LDA #$20
   STA ppu_addr_ptr+1
   LDA #$CC
